@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Il Mio Portafoglio</title>
+  <!-- Grafica moderna pronta all'uso con Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 font-sans max-w-lg mx-auto">
+
+  <h1 class="text-2xl font-bold mb-4 text-center">📈 Traccia Portafoglio</h1>
+
+  <!-- Scheda Totali -->
+  <div class="bg-white p-6 rounded-2xl shadow mb-6 text-center">
+    <p class="text-gray-500 text-sm">Patrimonio Totale</p>
+    <h2 id="totale" class="text-3xl font-extrabold text-green-600">€0.00</h2>
+  </div>
+
+  <!-- Aggiunta Asset -->
+  <div class="bg-white p-4 rounded-xl shadow mb-6 space-y-3">
+    <h3 class="font-semibold text-gray-700">Aggiungi Asset</h3>
+    <input id="ticker" type="text" placeholder="Ticker (es. AAPL, BTC-USD)" class="w-full p-2 border rounded">
+    <input id="quantita" type="number" placeholder="Quantità" class="w-full p-2 border rounded">
+    <button onclick="aggiungiAsset()" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700">
+      Aggiungi
+    </button>
+  </div>
+
+  <!-- Lista Asset -->
+  <div class="bg-white p-4 rounded-xl shadow">
+    <h3 class="font-semibold text-gray-700 mb-3">I Tuoi Asset</h3>
+    <div id="lista-asset" class="space-y-2 text-sm">
+      <p class="text-gray-400">Nessun asset inserito.</p>
+    </div>
+  </div>
+
+  <script>
+    let portafoglio = JSON.parse(localStorage.getItem('portafoglio')) || [];
+
+    function salvaEDisegna() {
+      localStorage.setItem('portafoglio', JSON.stringify(portafoglio));
+      const listaElem = document.getElementById('lista-asset');
+      const totaleElem = document.getElementById('totale');
+      
+      listaElem.innerHTML = '';
+      let totale = 0;
+
+      if (portafoglio.length === 0) {
+        listaElem.innerHTML = '<p class="text-gray-400">Nessun asset inserito.</p>';
+      }
+
+      portafoglio.forEach((item, index) => {
+        const valTot = item.quantita * item.prezzo;
+        totale += valTot;
+        listaElem.innerHTML += `
+          <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+            <div>
+              <span class="font-bold">${item.ticker}</span> 
+              <span class="text-xs text-gray-500">(${item.quantita} x €${item.prezzo})</span>
+            </div>
+            <div class="font-bold">€${valTot.toFixed(2)}</div>
+          </div>
+        `;
+      });
+
+      totaleElem.innerText = `€${totale.toFixed(2)}`;
+    }
+
+    async function aggiungiAsset() {
+      const ticker = document.getElementById('ticker').value.toUpperCase();
+      const quantita = parseFloat(document.getElementById('quantita').value);
+
+      if (!ticker || isNaN(quantita)) return alert('Inserisci dati validi');
+
+      // Recupera prezzo in automatico da API gratuita
+      try {
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`);
+        const data = await res.json();
+        const prezzo = data.chart.result[0].meta.regularMarketPrice || 0;
+
+        portafoglio.push({ ticker, quantita, prezzo });
+        salvaEDisegna();
+
+        document.getElementById('ticker').value = '';
+        document.getElementById('quantita').value = '';
+      } catch (err) {
+        alert('Errore nel recupero prezzo per il ticker ' + ticker);
+      }
+    }
+
+    // Carica dati all'avvio
+    salvaEDisegna();
+  </script>
+</body>
+</html>
