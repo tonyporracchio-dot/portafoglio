@@ -11,7 +11,6 @@
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold">📈 Mio Portafoglio</h1>
     <button onclick="aggiornaTuttiIPrezzi()" id="btn-refresh" class="bg-slate-200 hover:bg-slate-300 text-xs font-semibold py-2 px-3 rounded-lg transition flex items-center gap-1">
-      <span id="spinner" class="hidden animate-spin">🔄</span>
       <span>🔄 Aggiorna Prezzi</span>
     </button>
   </div>
@@ -23,7 +22,7 @@
     <p id="last-update" class="text-xs text-slate-400">Ultimo aggiornamento: Mai</p>
   </div>
 
-  <!-- Form Inserimento Positione -->
+  <!-- Form Inserimento Posizione -->
   <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 space-y-3">
     <h3 class="font-semibold text-slate-700 text-sm">Aggiungi Titolo / Crypto</h3>
     <input id="ticker" type="text" placeholder="Ticker (es. AAPL, TSLA, BTC-USD, SWDA.MI)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -33,14 +32,14 @@
       <input id="prezzo-manuale" type="number" step="any" placeholder="Prezzo (€ opzionale)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
     </div>
 
-    <p class="text-[10px] text-slate-400">Se lasci il prezzo vuoto, l'app cercherà di scaricarlo in automatico.</p>
+    <p class="text-[10px] text-slate-400">Se lasci il prezzo vuoto, l'app interrogherà il tuo proxy su Render.</p>
 
     <button onclick="aggiungiAsset()" id="btn-add" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-blue-700 transition">
       + Aggiungi al Portafoglio
     </button>
   </div>
 
-  <!-- Banner di Stato / Log per trasparenza -->
+  <!-- Banner di Stato -->
   <div id="status-banner" class="hidden p-3 rounded-xl mb-4 text-xs font-mono bg-slate-900 text-slate-200">
     <span id="status-text">In attesa...</span>
   </div>
@@ -54,7 +53,10 @@
   </div>
 
   <script>
-    let portafoglio = JSON.parse(localStorage.getItem('portafoglio_v2')) || [];
+    // URL del tuo Proxy personale su Render
+    const RENDER_PROXY_URL = 'https://proxy-stocks-prices.onrender.com';
+
+    let portafoglio = JSON.parse(localStorage.getItem('portafoglio_v3')) || [];
 
     function mostraStato(messaggio, tipo = 'info') {
       const banner = document.getElementById('status-banner');
@@ -66,33 +68,44 @@
       else text.className = 'text-amber-300';
     }
 
-    // Funzione di ricerca prezzo con doppio Proxy e timeout
-    async function fetchPrezzoYahoo(ticker) {
+    // Funzione per interrogare il proxy personale
+    async function fetchPrezzoProxy(ticker) {
       const symbol = ticker.trim().toUpperCase();
-      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+      const targetYahoo = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
       
-      const proxies = [
-        `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`
+      // Prova le rotte più comuni usate dai server proxy
+      const endpointsToTry = [
+        `${RENDER_PROXY_URL}/${symbol}`,
+        `${RENDER_PROXY_URL}/?symbol=${symbol}`,
+        `${RENDER_PROXY_URL}/?url=${encodeURIComponent(targetYahoo)}`,
+        `${RENDER_PROXY_URL}/${targetYahoo}`
       ];
 
-      for (let proxy of proxies) {
+      for (let url of endpointsToTry) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 sec timeout
+          // Timeout esteso a 25 secondi per permettere il risveglio (cold start) del server Render
+          const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-          const res = await fetch(proxy, { signal: controller.signal });
+          const res = await fetch(url, { signal: controller.signal });
           clearTimeout(timeoutId);
 
           if (res.ok) {
             const data = await res.json();
-            const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
+            
+            // Estrazione dinamica del prezzo in base al formato restituito dal proxy
+            const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice 
+                       || data?.price 
+                       || data?.regularMarketPrice 
+                       || data?.c
+                       || (typeof data === 'number' ? data : null);
+
             if (price && typeof price === 'number') {
               return price;
             }
           }
         } catch (e) {
-          console.warn(`Proxy fallito per ${symbol}:`, e);
+          console.warn(`Tentativo su ${url} non riuscito:`, e);
         }
       }
       return null;
@@ -150,24 +163,22 @@
         return;
       }
 
-      btnAdd.innerText = 'Ricerca prezzo in corso...';
+      btnAdd.innerText = 'Ricerca via Proxy in corso...';
       btnAdd.disabled = true;
 
-      // Se il prezzo manuale non è stato inserito, prova a scaricarlo automaticamente
       if (isNaN(prezzo) || prezzo <= 0) {
-        mostraStato(`🔍 Download prezzo automatico per ${ticker}...`);
-        prezzo = await fetchPrezzoYahoo(ticker);
+        mostraStato(`⏳ Interrogo il proxy Render per ${ticker} (attendi qualche secondo se il server è in risveglio)...`);
+        prezzo = await fetchPrezzoProxy(ticker);
       }
 
-      // Fallback: se l'API fallisce e l'utente non ha messo il prezzo
       if (!prezzo || isNaN(prezzo)) {
-        mostraStato(`⚠️ API non raggiungibile per ${ticker}. Inserimento manuale richiesto.`, 'error');
-        const inserito = prompt(`Impossibile scaricare il prezzo automatico per "${ticker}". Inserisci il prezzo unitario attuale in €:`);
+        mostraStato(`⚠️ Proxy non raggiungibile o risposta non standard per ${ticker}. Inserimento manuale.`, 'error');
+        const inserito = prompt(`Impossibile scaricare il prezzo per "${ticker}". Inserisci il prezzo unitario attuale in €:`);
         prezzo = parseFloat(inserito);
       }
 
       if (isNaN(prezzo) || prezzo <= 0) {
-        alert('Operazione annullata: è necessario un prezzo valido per procedere.');
+        alert('Operazione annullata.');
       } else {
         const esistente = portafoglio.find(a => a.ticker === ticker);
         if (esistente) {
@@ -177,7 +188,7 @@
           portafoglio.push({ ticker, quantita, prezzo });
         }
 
-        localStorage.setItem('portafoglio_v2', JSON.stringify(portafoglio));
+        localStorage.setItem('portafoglio_v3', JSON.stringify(portafoglio));
         disegnaInterfaccia();
         mostraStato(`✅ Asset ${ticker} aggiunto con prezzo €${prezzo.toFixed(2)}`, 'success');
 
@@ -195,18 +206,18 @@
 
       const btn = document.getElementById('btn-refresh');
       btn.disabled = true;
-      mostraStato('⏳ Aggiornamento prezzi di tutti i titoli...');
+      mostraStato('⏳ Connessione al proxy Render per aggiornamento prezzi...');
 
       let aggiornati = 0;
       for (let item of portafoglio) {
-        const nuovoPrezzo = await fetchPrezzoYahoo(item.ticker);
+        const nuovoPrezzo = await fetchPrezzoProxy(item.ticker);
         if (nuovoPrezzo && nuovoPrezzo > 0) {
           item.prezzo = nuovoPrezzo;
           aggiornati++;
         }
       }
 
-      localStorage.setItem('portafoglio_v2', JSON.stringify(portafoglio));
+      localStorage.setItem('portafoglio_v3', JSON.stringify(portafoglio));
       disegnaInterfaccia();
 
       const ora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -222,7 +233,7 @@
       const val = parseFloat(nuovoPrezzo);
       if (!isNaN(val) && val > 0) {
         asset.prezzo = val;
-        localStorage.setItem('portafoglio_v2', JSON.stringify(portafoglio));
+        localStorage.setItem('portafoglio_v3', JSON.stringify(portafoglio));
         disegnaInterfaccia();
         mostraStato(`✏️ Prezzo aggiornato per ${asset.ticker}: €${val.toFixed(2)}`, 'success');
       }
@@ -230,12 +241,11 @@
 
     function rimuoviAsset(index) {
       portafoglio.splice(index, 1);
-      localStorage.setItem('portafoglio_v2', JSON.stringify(portafoglio));
+      localStorage.setItem('portafoglio_v3', JSON.stringify(portafoglio));
       disegnaInterfaccia();
       mostraStato('🗑️ Posizione eliminata.', 'info');
     }
 
-    // Caricamento iniziale
     disegnaInterfaccia();
   </script>
 </body>
