@@ -6,7 +6,7 @@
   <title>Il Mio Portafoglio & Patrimonio</title>
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- SDK Firebase Compat per HTML statico -->
+  <!-- SDK Firebase Compat -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -22,46 +22,35 @@
   </div>
 
   <!-- SEZIONE CLOUD & GOOGLE AUTH -->
-  <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 space-y-3">
-    <div class="flex justify-between items-center cursor-pointer select-none" onclick="toggleCloudConfig()">
+  <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800">
+    <!-- Stato: Non Loggato -->
+    <div id="auth-logged-out" class="space-y-3">
       <div class="flex items-center gap-2">
-        <span id="cloud-status-icon">🔴</span>
-        <h3 class="font-semibold text-sm" id="cloud-status-text">Cloud Disconnesso</h3>
+        <span>🔴</span>
+        <h3 class="font-semibold text-sm">Sincronizzazione Disattivata</h3>
       </div>
-      <span id="cloud-toggle-btn" class="text-xs text-slate-400 font-semibold bg-slate-800 px-2.5 py-1 rounded-lg">Impostazioni ⚙️</span>
+      <p class="text-xs text-slate-400">Accedi con il tuo account Google per sincronizzare il patrimonio in tempo reale su tutti i tuoi dispositivi.</p>
+      
+      <button onclick="loginConGoogle()" id="btn-google-login" class="w-full bg-white hover:bg-slate-100 text-slate-800 font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition shadow-sm text-xs">
+        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        <span>Accedi con Google</span>
+      </button>
     </div>
 
-    <!-- Pannello login / user profile -->
-    <div id="cloud-config-panel" class="space-y-3 pt-3 border-t border-slate-800 text-xs">
-      
-      <!-- Stato: Non Loggato -->
-      <div id="auth-logged-out" class="space-y-3">
-        <p class="text-slate-400">Effettua il login con il tuo account Google per sincronizzare il portafoglio su tutti i tuoi dispositivi.</p>
-        
+    <!-- Stato: Loggato -->
+    <div id="auth-logged-in" class="hidden flex justify-between items-center">
+      <div class="flex items-center gap-2.5">
+        <span class="relative flex h-3 w-3">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+        </span>
+        <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-slate-700">
         <div>
-          <label class="block text-slate-400 mb-1 font-semibold">Configurazione Firebase (JSON):</label>
-          <textarea id="firebase-json" rows="3" placeholder='{"apiKey": "AIza...", "authDomain": "...", "projectId": "...", ...}' class="w-full p-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-          <button onclick="salvaConfigurazioneFirebase()" class="text-[10px] text-blue-400 hover:underline mt-1 block">💾 Salva Configurazione Firebase</button>
+          <p id="user-name" class="font-bold text-white text-xs"></p>
+          <p id="user-email" class="text-[10px] text-slate-400 font-mono"></p>
         </div>
-
-        <button onclick="loginConGoogle()" id="btn-google-login" class="w-full bg-white hover:bg-slate-100 text-slate-800 font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition shadow-sm">
-          <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-          <span>Accedi con Google</span>
-        </button>
       </div>
-
-      <!-- Stato: Loggato -->
-      <div id="auth-logged-in" class="hidden flex justify-between items-center bg-slate-800 p-2.5 rounded-xl">
-        <div class="flex items-center gap-2">
-          <img id="user-avatar" src="" class="w-7 h-7 rounded-full border border-slate-600">
-          <div>
-            <p id="user-name" class="font-bold text-white text-xs"></p>
-            <p id="user-email" class="text-[10px] text-slate-400 font-mono"></p>
-          </div>
-        </div>
-        <button onclick="logoutGoogle()" class="text-[11px] text-rose-400 hover:text-rose-300 font-semibold bg-slate-700/50 px-2.5 py-1 rounded-lg">Esci</button>
-      </div>
-
+      <button onclick="logoutGoogle()" class="text-[11px] text-rose-400 hover:text-rose-300 font-semibold bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition">Disconnetti</button>
     </div>
   </div>
 
@@ -156,7 +145,17 @@
   </div>
 
   <script>
-    // Stato dell'applicazione
+    // Configurazione Firebase del tuo progetto "portafoglio-gemini"
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-WrC9fbfOrYWl3F3c9JGtMujBRs5-nEo",
+      authDomain: "portafoglio-gemini.firebaseapp.com",
+      projectId: "portafoglio-gemini",
+      storageBucket: "portafoglio-gemini.firebasestorage.app",
+      messagingSenderId: "190042969168",
+      appId: "1:190042969168:web:e60fe9fe7ea4a44b1e2d55",
+      measurementId: "G-5PWT8M9RD1"
+    };
+
     let portafoglio = JSON.parse(localStorage.getItem('portafoglio_v5')) || [];
     let storicoLiquidita = JSON.parse(localStorage.getItem('storico_liquidita_v1')) || [];
     let dbFirebase = null;
@@ -174,101 +173,55 @@
       else text.className = 'text-amber-300';
     }
 
-    function toggleCloudConfig() {
-      const panel = document.getElementById('cloud-config-panel');
-      panel.classList.toggle('hidden');
-    }
-
-    // INIZIALIZZAZIONE CLOUD FIREBASE & AUTH
     function inizializzaFirebase() {
-      const configSaved = localStorage.getItem('firebase_config_json');
-
-      if (configSaved) {
-        document.getElementById('firebase-json').value = configSaved;
-        try {
-          const configObj = JSON.parse(configSaved);
-          if (!firebase.apps.length) {
-            firebase.initializeApp(configObj);
-          }
-          dbFirebase = firebase.firestore();
-
-          // Ascoltatore di stato dell'Autenticazione Google
-          firebase.auth().onAuthStateChanged((user) => {
-            currentUser = user;
-            if (user) {
-              // Utente Loggato
-              document.getElementById('cloud-status-icon').innerText = '🟢';
-              document.getElementById('cloud-status-text').innerText = 'Sincronizzazione Attiva';
-              document.getElementById('auth-logged-out').classList.add('hidden');
-              document.getElementById('auth-logged-in').classList.remove('hidden');
-              
-              document.getElementById('user-avatar').src = user.photoURL || 'https://via.placeholder.com/40';
-              document.getElementById('user-name').innerText = user.displayName || 'Utente';
-              document.getElementById('user-email').innerText = user.email;
-
-              mostraStato(`👋 Ciao ${user.displayName || 'Utente'}! Sincronizzazione Cloud attiva.`, 'success');
-              sincronizzaDaCloud();
-            } else {
-              // Utente Non Loggato
-              document.getElementById('cloud-status-icon').innerText = '🔴';
-              document.getElementById('cloud-status-text').innerText = 'Non autenticato';
-              document.getElementById('auth-logged-out').classList.remove('hidden');
-              document.getElementById('auth-logged-in').classList.add('hidden');
-            }
-          });
-
-        } catch (e) {
-          console.error("Errore inizializzazione Firebase:", e);
-          document.getElementById('cloud-status-icon').innerText = '🔴';
-        }
-      }
-    }
-
-    function salvaConfigurazioneFirebase() {
-      const jsonStr = document.getElementById('firebase-json').value.trim();
-      if (!jsonStr) {
-        alert("Inserisci la configurazione Firebase JSON.");
-        return;
-      }
-
       try {
-        JSON.parse(jsonStr);
-        localStorage.setItem('firebase_config_json', jsonStr);
-        alert("Configurazione Firebase salvata! Ora puoi accedere con Google.");
-        location.reload();
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        dbFirebase = firebase.firestore();
+
+        firebase.auth().onAuthStateChanged((user) => {
+          currentUser = user;
+          if (user) {
+            document.getElementById('auth-logged-out').classList.add('hidden');
+            document.getElementById('auth-logged-in').classList.remove('hidden');
+            
+            document.getElementById('user-avatar').src = user.photoURL || 'https://via.placeholder.com/40';
+            document.getElementById('user-name').innerText = user.displayName || 'Utente';
+            document.getElementById('user-email').innerText = user.email;
+
+            mostraStato(`👋 Benvenuto ${user.displayName || ''}! Sincronizzazione Cloud attiva.`, 'success');
+            sincronizzaDaCloud();
+          } else {
+            document.getElementById('auth-logged-out').classList.remove('hidden');
+            document.getElementById('auth-logged-in').classList.add('hidden');
+          }
+        });
+
       } catch (e) {
-        alert("Formato JSON non valido. Copia l'oggetto firebaseConfig dalla console.");
+        console.error("Errore inizializzazione Firebase:", e);
       }
     }
 
-    // LOGIN CON GOOGLE
     async function loginConGoogle() {
-      if (!firebase.apps.length) {
-        alert("Prima incolla e salva la configurazione Firebase JSON!");
-        return;
-      }
-
       const provider = new firebase.auth.GoogleAuthProvider();
       try {
         await firebase.auth().signInWithPopup(provider);
       } catch (e) {
-        console.error("Errore login Google:", e);
-        // Fallback su redirect se i popup sono bloccati dal browser mobile
         try {
           await firebase.auth().signInWithRedirect(provider);
         } catch (err) {
-          alert("Errore durante l'accesso con Google: " + err.message);
+          alert("Errore accesso Google: " + err.message);
         }
       }
     }
 
     function logoutGoogle() {
       firebase.auth().signOut().then(() => {
-        mostraStato("Disconnesso da Google. Dati salvati in locale.", "info");
+        mostraStato("Disconnesso. Dati mantenuti in locale.", "info");
       });
     }
 
-    // SALVATAGGIO CLOUD (In base al UID univoco di Google)
     async function salvaDati() {
       localStorage.setItem('portafoglio_v5', JSON.stringify(portafoglio));
       localStorage.setItem('storico_liquidita_v1', JSON.stringify(storicoLiquidita));
@@ -281,15 +234,13 @@
             storicoLiquidita: storicoLiquidita,
             ultimoAggiornamento: new Date().toISOString()
           });
-          mostraStato("☁️ Dati salvati nel tuo account Google!", "success");
+          mostraStato("☁️ Salvataggio Cloud effettuato!", "success");
         } catch (e) {
           console.error("Errore salvataggio Cloud:", e);
-          mostraStato("⚠️ Errore salvataggio in Cloud.", "error");
         }
       }
     }
 
-    // DOWNLOAD CLOUD (In base al UID univoco di Google)
     async function sincronizzaDaCloud() {
       if (!dbFirebase || !currentUser) return;
 
