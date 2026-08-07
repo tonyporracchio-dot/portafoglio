@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Il Mio Portafoglio</title>
-  <!-- Grafica Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 p-4 font-sans max-w-lg mx-auto">
@@ -28,7 +27,7 @@
     <h3 class="font-semibold text-slate-700 text-sm">Aggiungi Titolo o Cripto</h3>
     <div>
       <input id="ticker" type="text" placeholder="Ticker (es. AAPL, SWDA.MI, BTC-USD)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <span class="text-[10px] text-slate-400 mt-1 block">Usa il ticker Yahoo Finance (es. `.MI` per Piazza Affari)</span>
+      <span class="text-[10px] text-slate-400 mt-1 block">Esempi: AAPL, TSLA, SWDA.MI, CSSPX.MI, BTC-USD</span>
     </div>
     <input id="quantita" type="number" step="any" placeholder="Quantità posseduta" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
     <button onclick="aggiungiAsset()" id="btn-add" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-blue-700 transition">
@@ -47,22 +46,39 @@
   <script>
     let portafoglio = JSON.parse(localStorage.getItem('portafoglio')) || [];
 
-    // Funzione per recuperare il prezzo singolo da Yahoo Finance via Proxy
+    // Funzione robusta per recuperare i prezzi da Yahoo Finance
     async function fetchPrezzoYahoo(ticker) {
+      const symbol = ticker.trim().toUpperCase();
+      const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+      
+      // Prova tramite proxy AllOrigins
       try {
-        const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`;
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-        
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
         const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Errore di rete');
-        
-        const data = await response.json();
-        const price = data.chart.result[0].meta.regularMarketPrice;
-        return price || 0;
-      } catch (err) {
-        console.error(`Impossibile recuperare ${ticker}:`, err);
-        return null;
+        if (response.ok) {
+          const raw = await response.json();
+          const data = JSON.parse(raw.contents);
+          const price = data.chart.result[0].meta.regularMarketPrice;
+          if (price) return price;
+        }
+      } catch (e) {
+        console.warn("Proxy 1 fallito, provo il Proxy 2...", e);
       }
+
+      // Fallback: Prova tramite proxy ThingProxy
+      try {
+        const proxyUrl2 = `https://thingproxy.freeboard.io/fetch/${targetUrl}`;
+        const response2 = await fetch(proxyUrl2);
+        if (response2.ok) {
+          const data2 = await response2.json();
+          const price2 = data2.chart.result[0].meta.regularMarketPrice;
+          if (price2) return price2;
+        }
+      } catch (e) {
+        console.error("Errore nel recupero prezzo per " + symbol, e);
+      }
+
+      return null;
     }
 
     // Disegna la lista a schermo
@@ -145,9 +161,8 @@
       const prezzo = await fetchPrezzoYahoo(ticker);
 
       if (prezzo === null) {
-        alert(`Impossibile trovare il prezzo per "${ticker}". Verifica che il ticker sia corretto su Yahoo Finance.`);
+        alert(`Impossibile trovare il prezzo per "${ticker}". Verifica la connessione o il ticker.`);
       } else {
-        // Se l'asset esiste già, aggiungiamo la quantità
         const esistente = portafoglio.find(a => a.ticker === ticker);
         if (esistente) {
           esistente.quantita += quantita;
@@ -174,7 +189,7 @@
       disegnaInterfaccia();
     }
 
-    // Avvio dell'app: mostra subito i dati salvati e aggiorna i prezzi
+    // Avvio dell'app
     disegnaInterfaccia();
     if (portafoglio.length > 0) {
       aggiornaTuttiIPrezzi();
