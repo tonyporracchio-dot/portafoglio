@@ -4,93 +4,181 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Il Mio Portafoglio</title>
-  <!-- Grafica moderna pronta all'uso con Tailwind CSS -->
+  <!-- Grafica Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 p-4 font-sans max-w-lg mx-auto">
+<body class="bg-slate-100 text-slate-800 p-4 font-sans max-w-lg mx-auto">
 
-  <h1 class="text-2xl font-bold mb-4 text-center">📈 Traccia Portafoglio</h1>
-
-  <!-- Scheda Totali -->
-  <div class="bg-white p-6 rounded-2xl shadow mb-6 text-center">
-    <p class="text-gray-500 text-sm">Patrimonio Totale</p>
-    <h2 id="totale" class="text-3xl font-extrabold text-green-600">€0.00</h2>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">📈 Mio Portafoglio</h1>
+    <button onclick="aggiornaTuttiIPrezzi()" id="btn-refresh" class="bg-slate-200 hover:bg-slate-300 text-xs font-semibold py-2 px-3 rounded-lg flex items-center gap-1 transition">
+      <span>🔄</span> Aggiorna Prezzi
+    </button>
   </div>
 
-  <!-- Aggiunta Asset -->
-  <div class="bg-white p-4 rounded-xl shadow mb-6 space-y-3">
-    <h3 class="font-semibold text-gray-700">Aggiungi Asset</h3>
-    <input id="ticker" type="text" placeholder="Ticker (es. AAPL, BTC-USD)" class="w-full p-2 border rounded">
-    <input id="quantita" type="number" placeholder="Quantità" class="w-full p-2 border rounded">
-    <button onclick="aggiungiAsset()" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700">
-      Aggiungi
+  <!-- Scheda Totale Portafoglio -->
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 text-center">
+    <p class="text-slate-500 text-sm font-medium">Patrimonio Totale</p>
+    <h2 id="totale" class="text-3xl font-extrabold text-emerald-600 my-1">€0.00</h2>
+    <p id="last-update" class="text-xs text-slate-400">Ultimo aggiornamento: Mai</p>
+  </div>
+
+  <!-- Form Inserimento Asset -->
+  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 space-y-3">
+    <h3 class="font-semibold text-slate-700 text-sm">Aggiungi Titolo o Cripto</h3>
+    <div>
+      <input id="ticker" type="text" placeholder="Ticker (es. AAPL, SWDA.MI, BTC-USD)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <span class="text-[10px] text-slate-400 mt-1 block">Usa il ticker Yahoo Finance (es. `.MI` per Piazza Affari)</span>
+    </div>
+    <input id="quantita" type="number" step="any" placeholder="Quantità posseduta" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <button onclick="aggiungiAsset()" id="btn-add" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-blue-700 transition">
+      + Aggiungi al Portafoglio
     </button>
   </div>
 
   <!-- Lista Asset -->
-  <div class="bg-white p-4 rounded-xl shadow">
-    <h3 class="font-semibold text-gray-700 mb-3">I Tuoi Asset</h3>
-    <div id="lista-asset" class="space-y-2 text-sm">
-      <p class="text-gray-400">Nessun asset inserito.</p>
+  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+    <h3 class="font-semibold text-slate-700 text-sm mb-3">Dettaglio Posizioni</h3>
+    <div id="lista-asset" class="space-y-2">
+      <p class="text-slate-400 text-sm text-center py-4">Nessun asset presente.</p>
     </div>
   </div>
 
   <script>
     let portafoglio = JSON.parse(localStorage.getItem('portafoglio')) || [];
 
-    function salvaEDisegna() {
-      localStorage.setItem('portafoglio', JSON.stringify(portafoglio));
+    // Funzione per recuperare il prezzo singolo da Yahoo Finance via Proxy
+    async function fetchPrezzoYahoo(ticker) {
+      try {
+        const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+        
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Errore di rete');
+        
+        const data = await response.json();
+        const price = data.chart.result[0].meta.regularMarketPrice;
+        return price || 0;
+      } catch (err) {
+        console.error(`Impossibile recuperare ${ticker}:`, err);
+        return null;
+      }
+    }
+
+    // Disegna la lista a schermo
+    function disegnaInterfaccia() {
       const listaElem = document.getElementById('lista-asset');
       const totaleElem = document.getElementById('totale');
       
       listaElem.innerHTML = '';
-      let totale = 0;
+      let totaleValore = 0;
 
       if (portafoglio.length === 0) {
-        listaElem.innerHTML = '<p class="text-gray-400">Nessun asset inserito.</p>';
+        listaElem.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Nessun asset presente.</p>';
+        totaleElem.innerText = '€0.00';
+        return;
       }
 
       portafoglio.forEach((item, index) => {
-        const valTot = item.quantita * item.prezzo;
-        totale += valTot;
+        const valoreTotaleAsset = item.quantita * (item.prezzo || 0);
+        totaleValore += valoreTotaleAsset;
+
         listaElem.innerHTML += `
-          <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+          <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
             <div>
-              <span class="font-bold">${item.ticker}</span> 
-              <span class="text-xs text-gray-500">(${item.quantita} x €${item.prezzo})</span>
+              <p class="font-bold text-slate-800">${item.ticker}</p>
+              <p class="text-xs text-slate-500">${item.quantita} pz. × €${(item.prezzo || 0).toFixed(2)}</p>
             </div>
-            <div class="font-bold">€${valTot.toFixed(2)}</div>
+            <div class="text-right">
+              <p class="font-bold text-slate-900">€${valoreTotaleAsset.toFixed(2)}</p>
+              <button onclick="rimuoviAsset(${index})" class="text-[10px] text-red-500 hover:underline">Rimuovi</button>
+            </div>
           </div>
         `;
       });
 
-      totaleElem.innerText = `€${totale.toFixed(2)}`;
+      totaleElem.innerText = `€${totaleValore.toFixed(2)}`;
     }
 
-    async function aggiungiAsset() {
-      const ticker = document.getElementById('ticker').value.toUpperCase();
-      const quantita = parseFloat(document.getElementById('quantita').value);
+    // Aggiorna i prezzi di tutti gli asset in lista
+    async function aggiornaTuttiIPrezzi() {
+      if (portafoglio.length === 0) return;
 
-      if (!ticker || isNaN(quantita)) return alert('Inserisci dati validi');
+      const btn = document.getElementById('btn-refresh');
+      btn.innerText = '⏳ Aggiornamento...';
+      btn.disabled = true;
 
-      // Recupera prezzo in automatico da API gratuita
-      try {
-        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`);
-        const data = await res.json();
-        const prezzo = data.chart.result[0].meta.regularMarketPrice || 0;
-
-        portafoglio.push({ ticker, quantita, prezzo });
-        salvaEDisegna();
-
-        document.getElementById('ticker').value = '';
-        document.getElementById('quantita').value = '';
-      } catch (err) {
-        alert('Errore nel recupero prezzo per il ticker ' + ticker);
+      for (let item of portafoglio) {
+        const nuovoPrezzo = await fetchPrezzoYahoo(item.ticker);
+        if (nuovoPrezzo !== null) {
+          item.prezzo = nuovoPrezzo;
+        }
       }
+
+      localStorage.setItem('portafoglio', JSON.stringify(portafoglio));
+      disegnaInterfaccia();
+
+      const ora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('last-update').innerText = `Ultimo aggiornamento: oggi alle ${ora}`;
+      
+      btn.innerText = '🔄 Aggiorna Prezzi';
+      btn.disabled = false;
     }
 
-    // Carica dati all'avvio
-    salvaEDisegna();
+    // Aggiungi un nuovo asset
+    async function aggiungiAsset() {
+      const tickerInput = document.getElementById('ticker');
+      const quantitaInput = document.getElementById('quantita');
+      const btnAdd = document.getElementById('btn-add');
+
+      const ticker = tickerInput.value.trim().toUpperCase();
+      const quantita = parseFloat(quantitaInput.value);
+
+      if (!ticker || isNaN(quantita) || quantita <= 0) {
+        alert('Per favore inserisci un Ticker e una Quantità valida.');
+        return;
+      }
+
+      btnAdd.innerText = 'Ricerca prezzo...';
+      btnAdd.disabled = true;
+
+      const prezzo = await fetchPrezzoYahoo(ticker);
+
+      if (prezzo === null) {
+        alert(`Impossibile trovare il prezzo per "${ticker}". Verifica che il ticker sia corretto su Yahoo Finance.`);
+      } else {
+        // Se l'asset esiste già, aggiungiamo la quantità
+        const esistente = portafoglio.find(a => a.ticker === ticker);
+        if (esistente) {
+          esistente.quantita += quantita;
+          esistente.prezzo = prezzo;
+        } else {
+          portafoglio.push({ ticker, quantita, prezzo });
+        }
+
+        localStorage.setItem('portafoglio', JSON.stringify(portafoglio));
+        disegnaInterfaccia();
+
+        tickerInput.value = '';
+        quantitaInput.value = '';
+      }
+
+      btnAdd.innerText = '+ Aggiungi al Portafoglio';
+      btnAdd.disabled = false;
+    }
+
+    // Rimuovi asset
+    function rimuoviAsset(index) {
+      portafoglio.splice(index, 1);
+      localStorage.setItem('portafoglio', JSON.stringify(portafoglio));
+      disegnaInterfaccia();
+    }
+
+    // Avvio dell'app: mostra subito i dati salvati e aggiorna i prezzi
+    disegnaInterfaccia();
+    if (portafoglio.length > 0) {
+      aggiornaTuttiIPrezzi();
+    }
   </script>
 </body>
 </html>
