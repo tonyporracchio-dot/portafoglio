@@ -3,55 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portafoglio - Test Diagnostico</title>
+  <title>Il Mio Portafoglio</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 p-4 font-sans max-w-lg mx-auto">
 
-  <h1 class="text-2xl font-bold mb-4 text-center">🧪 Test Portafoglio</h1>
-
-  <!-- Scheda Totale -->
-  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 text-center">
-    <p class="text-slate-500 text-sm font-medium">Patrimonio Totale</p>
-    <h2 id="totale" class="text-3xl font-extrabold text-emerald-600 my-1">€0.00</h2>
-  </div>
-
-  <!-- Form Inserimento -->
-  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 space-y-3">
-    <h3 class="font-semibold text-slate-700 text-sm">Inserisci Positione</h3>
-    <input id="ticker" type="text" placeholder="Ticker (es. AAPL)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase">
-    
-    <div class="grid grid-cols-2 gap-2">
-      <input id="quantita" type="number" step="any" placeholder="Quantità (es. 10)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-      <input id="prezzo-manuale" type="number" step="any" placeholder="Prezzo test (€/$)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-    </div>
-
-    <button onclick="aggiungiAssetTest()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-blue-700 transition">
-      + Aggiungi Posizione (Test)
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">📈 Mio Portafoglio</h1>
+    <button onclick="aggiornaTuttiIPrezzi()" id="btn-refresh" class="bg-slate-200 hover:bg-slate-300 text-xs font-semibold py-2 px-3 rounded-lg transition flex items-center gap-1">
+      <span id="spinner" class="hidden animate-spin">🔄</span>
+      <span>🔄 Aggiorna Prezzi</span>
     </button>
   </div>
 
-  <!-- Box Diagnostico Log -->
-  <div class="bg-slate-900 text-green-400 p-3 rounded-xl mb-6 text-xs font-mono space-y-1">
-    <p class="text-slate-400 font-bold border-b border-slate-700 pb-1">📟 Registro Diagnostico:</p>
-    <div id="log-box">Pronto per il test...</div>
+  <!-- Scheda Totale Portafoglio -->
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 text-center">
+    <p class="text-slate-500 text-sm font-medium">Patrimonio Totale</p>
+    <h2 id="totale" class="text-3xl font-extrabold text-emerald-600 my-1">€0.00</h2>
+    <p id="last-update" class="text-xs text-slate-400">Ultimo aggiornamento: Mai</p>
+  </div>
+
+  <!-- Form Inserimento Positione -->
+  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 space-y-3">
+    <h3 class="font-semibold text-slate-700 text-sm">Aggiungi Titolo / Crypto</h3>
+    <input id="ticker" type="text" placeholder="Ticker (es. AAPL, TSLA, BTC-USD, SWDA.MI)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500">
+    
+    <div class="grid grid-cols-2 gap-2">
+      <input id="quantita" type="number" step="any" placeholder="Quantità" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="prezzo-manuale" type="number" step="any" placeholder="Prezzo (€ opzionale)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+
+    <p class="text-[10px] text-slate-400">Se lasci il prezzo vuoto, l'app cercherà di scaricarlo in automatico.</p>
+
+    <button onclick="aggiungiAsset()" id="btn-add" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-blue-700 transition">
+      + Aggiungi al Portafoglio
+    </button>
+  </div>
+
+  <!-- Banner di Stato / Log per trasparenza -->
+  <div id="status-banner" class="hidden p-3 rounded-xl mb-4 text-xs font-mono bg-slate-900 text-slate-200">
+    <span id="status-text">In attesa...</span>
   </div>
 
   <!-- Lista Asset -->
   <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
     <h3 class="font-semibold text-slate-700 text-sm mb-3">Dettaglio Posizioni</h3>
     <div id="lista-asset" class="space-y-2">
-      <p class="text-slate-400 text-sm text-center py-4">Nessun asset inserito.</p>
+      <p class="text-slate-400 text-sm text-center py-4">Nessun asset presente.</p>
     </div>
   </div>
 
   <script>
-    let portafoglio = JSON.parse(localStorage.getItem('portafoglio_test')) || [];
+    let portafoglio = JSON.parse(localStorage.getItem('portafoglio_v2')) || [];
 
-    function log(messaggio) {
-      const box = document.getElementById('log-box');
-      const ora = new Date().toLocaleTimeString();
-      box.innerHTML = `[${ora}] ${messaggio}<br>` + box.innerHTML;
+    function mostraStato(messaggio, tipo = 'info') {
+      const banner = document.getElementById('status-banner');
+      const text = document.getElementById('status-text');
+      banner.classList.remove('hidden');
+      text.innerText = messaggio;
+      if (tipo === 'error') text.className = 'text-red-400';
+      else if (tipo === 'success') text.className = 'text-green-400';
+      else text.className = 'text-amber-300';
+    }
+
+    // Funzione di ricerca prezzo con doppio Proxy e timeout
+    async function fetchPrezzoYahoo(ticker) {
+      const symbol = ticker.trim().toUpperCase();
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+      
+      const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`
+      ];
+
+      for (let proxy of proxies) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 sec timeout
+
+          const res = await fetch(proxy, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const data = await res.json();
+            const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
+            if (price && typeof price === 'number') {
+              return price;
+            }
+          }
+        } catch (e) {
+          console.warn(`Proxy fallito per ${symbol}:`, e);
+        }
+      }
+      return null;
     }
 
     function disegnaInterfaccia() {
@@ -62,24 +106,27 @@
       let totaleValore = 0;
 
       if (portafoglio.length === 0) {
-        listaElem.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Nessun asset inserito.</p>';
+        listaElem.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Nessun asset presente.</p>';
         totaleElem.innerText = '€0.00';
         return;
       }
 
       portafoglio.forEach((item, index) => {
-        const valoreTotaleAsset = item.quantita * item.prezzo;
+        const valoreTotaleAsset = item.quantita * (item.prezzo || 0);
         totaleValore += valoreTotaleAsset;
 
         listaElem.innerHTML += `
           <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
             <div>
               <p class="font-bold text-slate-800">${item.ticker}</p>
-              <p class="text-xs text-slate-500">${item.quantita} pz. × €${item.prezzo.toFixed(2)}</p>
+              <p class="text-xs text-slate-500">${item.quantita} pz. × €${(item.prezzo || 0).toFixed(2)}</p>
             </div>
             <div class="text-right">
               <p class="font-bold text-slate-900">€${valoreTotaleAsset.toFixed(2)}</p>
-              <button onclick="rimuoviAsset(${index})" class="text-[10px] text-red-500 hover:underline">Elimina</button>
+              <div class="flex gap-2 justify-end mt-1">
+                <button onclick="modificaPrezzoManuale(${index})" class="text-[10px] text-blue-600 hover:underline">Modifica €</button>
+                <button onclick="rimuoviAsset(${index})" class="text-[10px] text-red-500 hover:underline">Elimina</button>
+              </div>
             </div>
           </div>
         `;
@@ -88,65 +135,107 @@
       totaleElem.innerText = `€${totaleValore.toFixed(2)}`;
     }
 
-    function aggiungiAssetTest() {
+    async function aggiungiAsset() {
       const tickerInput = document.getElementById('ticker');
       const quantitaInput = document.getElementById('quantita');
       const prezzoInput = document.getElementById('prezzo-manuale');
+      const btnAdd = document.getElementById('btn-add');
 
       const ticker = tickerInput.value.trim().toUpperCase();
       const quantita = parseFloat(quantitaInput.value);
       let prezzo = parseFloat(prezzoInput.value);
 
-      log(`Tentativo di aggiunta: Ticker=${ticker || 'VUOTO'}, Quantità=${quantita}`);
-
-      if (!ticker) {
-        log('❌ Errore: Campo Ticker vuoto.');
-        alert('Inserisci un Ticker (es. AAPL)');
+      if (!ticker || isNaN(quantita) || quantita <= 0) {
+        alert('Inserisci un Ticker e una Quantità valida.');
         return;
       }
 
-      if (isNaN(quantita) || quantita <= 0) {
-        log('❌ Errore: Quantità non valida.');
-        alert('Inserisci una quantità valida.');
-        return;
-      }
+      btnAdd.innerText = 'Ricerca prezzo in corso...';
+      btnAdd.disabled = true;
 
-      // Se non è inserito un prezzo manuale, assegna un valore simulato di test
+      // Se il prezzo manuale non è stato inserito, prova a scaricarlo automaticamente
       if (isNaN(prezzo) || prezzo <= 0) {
-        prezzo = (ticker === 'AAPL') ? 185.50 : 100.00;
-        log(`⚠️ Nessun prezzo inserito. Usato prezzo simulato di test: €${prezzo}`);
-      } else {
-        log(`✅ Usato prezzo manuale inserito: €${prezzo}`);
+        mostraStato(`🔍 Download prezzo automatico per ${ticker}...`);
+        prezzo = await fetchPrezzoYahoo(ticker);
       }
 
-      const esistente = portafoglio.find(a => a.ticker === ticker);
-      if (esistente) {
-        esistente.quantita += quantita;
-        esistente.prezzo = prezzo;
-        log(`🔄 Aggiornata posizione esistente per ${ticker}`);
-      } else {
-        portafoglio.push({ ticker, quantita, prezzo });
-        log(`➕ Aggiunta nuova posizione per ${ticker}`);
+      // Fallback: se l'API fallisce e l'utente non ha messo il prezzo
+      if (!prezzo || isNaN(prezzo)) {
+        mostraStato(`⚠️ API non raggiungibile per ${ticker}. Inserimento manuale richiesto.`, 'error');
+        const inserito = prompt(`Impossibile scaricare il prezzo automatico per "${ticker}". Inserisci il prezzo unitario attuale in €:`);
+        prezzo = parseFloat(inserito);
       }
 
-      localStorage.setItem('portafoglio_test', JSON.stringify(portafoglio));
+      if (isNaN(prezzo) || prezzo <= 0) {
+        alert('Operazione annullata: è necessario un prezzo valido per procedere.');
+      } else {
+        const esistente = portafoglio.find(a => a.ticker === ticker);
+        if (esistente) {
+          esistente.quantita += quantita;
+          esistente.prezzo = prezzo;
+        } else {
+          portafoglio.push({ ticker, quantita, prezzo });
+        }
+
+        localStorage.setItem('portafoglio_v2', JSON.stringify(portafoglio));
+        disegnaInterfaccia();
+        mostraStato(`✅ Asset ${ticker} aggiunto con prezzo €${prezzo.toFixed(2)}`, 'success');
+
+        tickerInput.value = '';
+        quantitaInput.value = '';
+        prezzoInput.value = '';
+      }
+
+      btnAdd.innerText = '+ Aggiungi al Portafoglio';
+      btnAdd.disabled = false;
+    }
+
+    async function aggiornaTuttiIPrezzi() {
+      if (portafoglio.length === 0) return;
+
+      const btn = document.getElementById('btn-refresh');
+      btn.disabled = true;
+      mostraStato('⏳ Aggiornamento prezzi di tutti i titoli...');
+
+      let aggiornati = 0;
+      for (let item of portafoglio) {
+        const nuovoPrezzo = await fetchPrezzoYahoo(item.ticker);
+        if (nuovoPrezzo && nuovoPrezzo > 0) {
+          item.prezzo = nuovoPrezzo;
+          aggiornati++;
+        }
+      }
+
+      localStorage.setItem('portafoglio_v2', JSON.stringify(portafoglio));
       disegnaInterfaccia();
 
-      tickerInput.value = '';
-      quantitaInput.value = '';
-      prezzoInput.value = '';
-      log('🎉 Posizione salvata con successo!');
+      const ora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('last-update').innerText = `Ultimo aggiornamento: oggi alle ${ora}`;
+      
+      mostraStato(`✅ Prezzi aggiornati: ${aggiornati}/${portafoglio.length} titoli sincronizzati.`, 'success');
+      btn.disabled = false;
+    }
+
+    function modificaPrezzoManuale(index) {
+      const asset = portafoglio[index];
+      const nuovoPrezzo = prompt(`Inserisci il nuovo prezzo unitario in € per ${asset.ticker}:`, asset.prezzo);
+      const val = parseFloat(nuovoPrezzo);
+      if (!isNaN(val) && val > 0) {
+        asset.prezzo = val;
+        localStorage.setItem('portafoglio_v2', JSON.stringify(portafoglio));
+        disegnaInterfaccia();
+        mostraStato(`✏️ Prezzo aggiornato per ${asset.ticker}: €${val.toFixed(2)}`, 'success');
+      }
     }
 
     function rimuoviAsset(index) {
-      log(`🗑️ Rimosso asset indice ${index}`);
       portafoglio.splice(index, 1);
-      localStorage.setItem('portafoglio_test', JSON.stringify(portafoglio));
+      localStorage.setItem('portafoglio_v2', JSON.stringify(portafoglio));
       disegnaInterfaccia();
+      mostraStato('🗑️ Posizione eliminata.', 'info');
     }
 
     // Caricamento iniziale
-    log('App avviata correttamente.');
     disegnaInterfaccia();
   </script>
 </body>
