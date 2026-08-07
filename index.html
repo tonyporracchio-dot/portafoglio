@@ -22,28 +22,28 @@
 
   <!-- SEZIONE CLOUD FIREBASE -->
   <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 space-y-3">
-    <div class="flex justify-between items-center cursor-pointer" onclick="toggleCloudConfig()">
+    <div class="flex justify-between items-center cursor-pointer select-none" onclick="toggleCloudConfig()">
       <div class="flex items-center gap-2">
         <span id="cloud-status-icon">🔴</span>
         <h3 class="font-semibold text-sm">Sincronizzazione Cloud (Firebase)</h3>
       </div>
-      <span id="cloud-toggle-btn" class="text-xs text-slate-400">Configura ⚙️</span>
+      <span id="cloud-toggle-btn" class="text-xs text-slate-400 font-semibold bg-slate-800 px-2.5 py-1 rounded-lg">Configura ⚙️</span>
     </div>
 
-    <div id="cloud-config-panel" class="hidden space-y-3 pt-2 border-t border-slate-800 text-xs">
-      <p class="text-slate-400">Incolla qui l'oggetto <code class="text-amber-300">firebaseConfig</code> e scegli una password/ID portafoglio per collegare i tuoi dispositivi.</p>
+    <div id="cloud-config-panel" class="hidden space-y-3 pt-3 border-t border-slate-800 text-xs">
+      <p class="text-slate-400">Incolla qui l'oggetto <code class="text-amber-300">firebaseConfig</code> e scegli un ID segreto per collegare tutti i tuoi dispositivi.</p>
       
       <div>
-        <label class="block text-slate-400 mb-1">ID Portafoglio / Password Segreta:</label>
-        <input id="sync-key" type="text" placeholder="es. mio-portafoglio-2026" class="w-full p-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono focus:outline-none">
+        <label class="block text-slate-400 mb-1 font-semibold">ID Portafoglio / Password Segreta:</label>
+        <input id="sync-key" type="text" placeholder="es. mio-portafoglio-2026" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
 
       <div>
-        <label class="block text-slate-400 mb-1">Configurazione Firebase (JSON):</label>
-        <textarea id="firebase-json" rows="4" placeholder='{"apiKey": "AIza...", "projectId": "...", ...}' class="w-full p-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono text-[10px] focus:outline-none"></textarea>
+        <label class="block text-slate-400 mb-1 font-semibold">Configurazione Firebase (JSON):</label>
+        <textarea id="firebase-json" rows="4" placeholder='{"apiKey": "AIza...", "projectId": "...", ...}' class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
       </div>
 
-      <button onclick="salvaConfigurazioneCloud()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl transition">
+      <button onclick="salvaConfigurazioneCloud()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition">
         💾 Salva e Connetti Cloud
       </button>
     </div>
@@ -181,9 +181,8 @@
           syncKeyGlobal = keySaved.trim();
 
           document.getElementById('cloud-status-icon').innerText = '🟢';
-          mostraStato('☁️ Connesso a Firebase. Sincronizzazione attiva!', 'success');
+          mostraStato("☁️ Connesso a Firebase. Sincronizzazione attiva!", "success");
 
-          // Sincronizzazione / Download automatico dal Cloud
           sincronizzaDaCloud();
         } catch (e) {
           console.error("Errore inizializzazione Firebase:", e);
@@ -197,22 +196,21 @@
       const keyStr = document.getElementById('sync-key').value.trim();
 
       if (!jsonStr || !keyStr) {
-        alert('Inserisci sia la configurazione Firebase JSON che la Password/ID Portafoglio.');
+        alert("Inserisci sia la configurazione Firebase JSON che la Password/ID Portafoglio.");
         return;
       }
 
       try {
-        JSON.parse(jsonStr); // Valida JSON
+        JSON.parse(jsonStr);
         localStorage.setItem('firebase_config_json', jsonStr);
         localStorage.setItem('firebase_sync_key', keyStr);
-        alert('Configurazione salvata con successo! L'app si collegherà al cloud.');
+        alert("Configurazione salvata con successo! L'app si collegherà al cloud.");
         location.reload();
       } catch (e) {
-        alert('Formato JSON non valido. Assicurati di copiare correttamente l'oggetto firebaseConfig.');
+        alert("Formato JSON non valido. Assicurati di copiare correttamente l'oggetto firebaseConfig.");
       }
     }
 
-    // Salva sia in LocalStorage che su Firebase Cloud
     async function salvaDati() {
       localStorage.setItem('portafoglio_v5', JSON.stringify(portafoglio));
       localStorage.setItem('storico_liquidita_v1', JSON.stringify(storicoLiquidita));
@@ -224,15 +222,14 @@
             storicoLiquidita: storicoLiquidita,
             ultimoAggiornamento: new Date().toISOString()
           });
-          mostraStato('☁️ Dati salvati in Cloud!', 'success');
+          mostraStato("☁️ Dati salvati in Cloud!", "success");
         } catch (e) {
           console.error("Errore salvataggio Cloud:", e);
-          mostraStato('⚠️ Errore salvataggio in Cloud.', 'error');
+          mostraStato("⚠️ Errore salvataggio in Cloud.", "error");
         }
       }
     }
 
-    // Scarica dati da Firebase Cloud
     async function sincronizzaDaCloud() {
       if (!dbFirebase || !syncKeyGlobal) return;
 
@@ -247,7 +244,6 @@
           localStorage.setItem('storico_liquidita_v1', JSON.stringify(storicoLiquidita));
           disegnaInterfaccia();
         } else {
-          // Se il documento sul cloud è nuovo, carica i dati locali attuali sul cloud
           salvaDati();
         }
       } catch (e) {
@@ -255,7 +251,6 @@
       }
     }
 
-    // Proxy Render per quotazioni
     async function fetchPrezzoProxy(ticker) {
       const symbol = ticker.trim().toUpperCase();
       const url = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
