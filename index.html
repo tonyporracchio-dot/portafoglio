@@ -25,7 +25,7 @@
   <!-- Form Inserimento Posizione -->
   <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 space-y-3">
     <h3 class="font-semibold text-slate-700 text-sm">Aggiungi Titolo / Crypto</h3>
-    <input id="ticker" type="text" placeholder="Ticker (es. AAPL, TSLA, BTC-USD, SWDA.MI)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <input id="ticker" type="text" placeholder="Ticker (es. AAPL, TSLA, MWRD.MI, BTC-USD)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500">
     
     <div class="grid grid-cols-2 gap-2">
       <input id="quantita" type="number" step="any" placeholder="Quantità" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -53,9 +53,6 @@
   </div>
 
   <script>
-    // URL del tuo Proxy personale su Render
-    const RENDER_PROXY_URL = 'https://proxy-stocks-prices.onrender.com';
-
     let portafoglio = JSON.parse(localStorage.getItem('portafoglio_v3')) || [];
 
     function mostraStato(messaggio, tipo = 'info') {
@@ -68,45 +65,35 @@
       else text.className = 'text-amber-300';
     }
 
-    // Funzione per interrogare il proxy personale
+    // Funzione mirata sul tuo endpoint Render
     async function fetchPrezzoProxy(ticker) {
       const symbol = ticker.trim().toUpperCase();
-      const targetYahoo = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
-      
-      // Prova le rotte più comuni usate dai server proxy
-      const endpointsToTry = [
-        `${RENDER_PROXY_URL}/${symbol}`,
-        `${RENDER_PROXY_URL}/?symbol=${symbol}`,
-        `${RENDER_PROXY_URL}/?url=${encodeURIComponent(targetYahoo)}`,
-        `${RENDER_PROXY_URL}/${targetYahoo}`
-      ];
+      const url = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
 
-      for (let url of endpointsToTry) {
-        try {
-          const controller = new AbortController();
-          // Timeout esteso a 25 secondi per permettere il risveglio (cold start) del server Render
-          const timeoutId = setTimeout(() => controller.abort(), 25000);
+      try {
+        const controller = new AbortController();
+        // Timeout di 25 secondi per coprire l'eventuale risveglio (cold start) di Render
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-          const res = await fetch(url, { signal: controller.signal });
-          clearTimeout(timeoutId);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
 
-          if (res.ok) {
-            const data = await res.json();
-            
-            // Estrazione dinamica del prezzo in base al formato restituito dal proxy
-            const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice 
-                       || data?.price 
-                       || data?.regularMarketPrice 
-                       || data?.c
-                       || (typeof data === 'number' ? data : null);
+        if (res.ok) {
+          const data = await res.json();
+          
+          // Estrazione flessibile del valore numerico dal JSON
+          const price = data?.price 
+                     || data?.regularMarketPrice 
+                     || data?.c 
+                     || data?.chart?.result?.[0]?.meta?.regularMarketPrice 
+                     || (typeof data === 'number' ? data : null);
 
-            if (price && typeof price === 'number') {
-              return price;
-            }
+          if (price && typeof price === 'number') {
+            return price;
           }
-        } catch (e) {
-          console.warn(`Tentativo su ${url} non riuscito:`, e);
         }
+      } catch (e) {
+        console.warn(`Errore durante la chiamata al proxy per ${symbol}:`, e);
       }
       return null;
     }
@@ -167,12 +154,12 @@
       btnAdd.disabled = true;
 
       if (isNaN(prezzo) || prezzo <= 0) {
-        mostraStato(`⏳ Interrogo il proxy Render per ${ticker} (attendi qualche secondo se il server è in risveglio)...`);
+        mostraStato(`⏳ Interrogo il proxy per ${ticker} (attendi qualche secondo se il server è in risveglio)...`);
         prezzo = await fetchPrezzoProxy(ticker);
       }
 
       if (!prezzo || isNaN(prezzo)) {
-        mostraStato(`⚠️ Proxy non raggiungibile o risposta non standard per ${ticker}. Inserimento manuale.`, 'error');
+        mostraStato(`⚠️ Risposta non valida per ${ticker}. Inserimento manuale richiesto.`, 'error');
         const inserito = prompt(`Impossibile scaricare il prezzo per "${ticker}". Inserisci il prezzo unitario attuale in €:`);
         prezzo = parseFloat(inserito);
       }
@@ -206,7 +193,7 @@
 
       const btn = document.getElementById('btn-refresh');
       btn.disabled = true;
-      mostraStato('⏳ Connessione al proxy Render per aggiornamento prezzi...');
+      mostraStato('⏳ Connessione al proxy per aggiornamento prezzi...');
 
       let aggiornati = 0;
       for (let item of portafoglio) {
