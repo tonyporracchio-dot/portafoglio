@@ -3,39 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Il Mio Portafoglio</title>
+  <title>Il Mio Portafoglio & Patrimonio</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- SDK Firebase Compat per HTML statico -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-slate-100 text-slate-800 p-4 font-sans max-w-lg mx-auto">
+<body class="bg-slate-100 text-slate-800 p-4 font-sans max-w-xl mx-auto space-y-6">
 
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">📈 Mio Portafoglio</h1>
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <h1 class="text-2xl font-bold">📈 Mio Patrimonio</h1>
     <button onclick="aggiornaTuttiIPrezzi()" id="btn-refresh" class="bg-slate-200 hover:bg-slate-300 text-xs font-semibold py-2 px-3 rounded-lg transition flex items-center gap-1">
-      <span>🔄 Aggiorna Prezzi</span>
+      <span>🔄 Aggiorna Titoli</span>
     </button>
   </div>
 
-  <!-- Scheda Riepilogo Portafoglio -->
-  <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider text-center">Patrimonio Totale (Valore Attuale)</p>
-    <h2 id="totale-attuale" class="text-3xl font-black text-slate-900 text-center my-1">€0.00</h2>
-    
-    <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-100 text-center text-xs">
-      <div>
-        <p class="text-slate-400 font-medium">Capitale Investito</p>
-        <p id="totale-investito" class="font-bold text-slate-700 text-sm">€0.00</p>
+  <!-- SEZIONE CLOUD FIREBASE -->
+  <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm border border-slate-800 space-y-3">
+    <div class="flex justify-between items-center cursor-pointer" onclick="toggleCloudConfig()">
+      <div class="flex items-center gap-2">
+        <span id="cloud-status-icon">🔴</span>
+        <h3 class="font-semibold text-sm">Sincronizzazione Cloud (Firebase)</h3>
       </div>
-      <div>
-        <p class="text-slate-400 font-medium">Profitto / Perdita</p>
-        <p id="totale-profitto" class="font-bold text-slate-700 text-sm">€0.00 (0.00%)</p>
-      </div>
+      <span id="cloud-toggle-btn" class="text-xs text-slate-400">Configura ⚙️</span>
     </div>
-    <p id="last-update" class="text-[10px] text-slate-400 text-center mt-3">Ultimo aggiornamento: Mai</p>
+
+    <div id="cloud-config-panel" class="hidden space-y-3 pt-2 border-t border-slate-800 text-xs">
+      <p class="text-slate-400">Incolla qui l'oggetto <code class="text-amber-300">firebaseConfig</code> e scegli una password/ID portafoglio per collegare i tuoi dispositivi.</p>
+      
+      <div>
+        <label class="block text-slate-400 mb-1">ID Portafoglio / Password Segreta:</label>
+        <input id="sync-key" type="text" placeholder="es. mio-portafoglio-2026" class="w-full p-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-slate-400 mb-1">Configurazione Firebase (JSON):</label>
+        <textarea id="firebase-json" rows="4" placeholder='{"apiKey": "AIza...", "projectId": "...", ...}' class="w-full p-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono text-[10px] focus:outline-none"></textarea>
+      </div>
+
+      <button onclick="salvaConfigurazioneCloud()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl transition">
+        💾 Salva e Connetti Cloud
+      </button>
+    </div>
   </div>
 
-  <!-- Form Inserimento Posizione -->
-  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 space-y-3">
-    <h3 class="font-semibold text-slate-700 text-sm">Aggiungi Titolo / ETF / Crypto</h3>
+  <!-- Scheda Riepilogo Generale -->
+  <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider text-center">Patrimonio Netto Complessivo</p>
+    <h2 id="totale-netto" class="text-3xl font-black text-slate-900 text-center my-1">€0.00</h2>
+    
+    <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100 text-center text-xs">
+      <div>
+        <p class="text-slate-400 font-medium">Titoli (Attuale)</p>
+        <p id="totale-titoli" class="font-bold text-slate-700 text-sm">€0.00</p>
+      </div>
+      <div>
+        <p class="text-slate-400 font-medium">Liquidità</p>
+        <p id="totale-liquidita" class="font-bold text-slate-700 text-sm">€0.00</p>
+      </div>
+      <div>
+        <p class="text-slate-400 font-medium">P&L Titoli</p>
+        <p id="totale-profitto" class="font-bold text-slate-700 text-sm">€0.00</p>
+      </div>
+    </div>
+    <p id="last-update" class="text-[10px] text-slate-400 text-center mt-3">Ultimo aggiornamento titoli: Mai</p>
+  </div>
+
+  <!-- Banner di Stato -->
+  <div id="status-banner" class="hidden p-3 rounded-xl text-xs font-mono bg-slate-900 text-slate-200">
+    <span id="status-text">In attesa...</span>
+  </div>
+
+  <!-- SEZIONE 1: INVESTIMENTI (TITOLI / ETF) -->
+  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+    <h3 class="font-semibold text-slate-800 text-sm flex items-center gap-1">📊 Aggiungi Titolo / ETF</h3>
     
     <div class="grid grid-cols-2 gap-2">
       <input id="ticker" type="text" placeholder="Ticker (es. SWDA.MI)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -44,32 +87,66 @@
 
     <div class="grid grid-cols-2 gap-2">
       <input id="quantita" type="number" step="any" placeholder="Quantità" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <input id="pmc" type="number" step="any" placeholder="PMC (€ Prezzo Acquisto)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="pmc" type="number" step="any" placeholder="PMC (€ Acquisto)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
     </div>
 
     <input id="prezzo-manuale" type="number" step="any" placeholder="Prezzo Attuale (€ opzionale)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-    <p class="text-[10px] text-slate-400">Se lasci il Prezzo Attuale vuoto, verrà scaricato in automatico via Render proxy.</p>
 
     <button onclick="aggiungiAsset()" id="btn-add" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-blue-700 transition">
-      + Aggiungi al Portafoglio
+      + Aggiungi Titolo
     </button>
   </div>
 
-  <!-- Banner di Stato -->
-  <div id="status-banner" class="hidden p-3 rounded-xl mb-4 text-xs font-mono bg-slate-900 text-slate-200">
-    <span id="status-text">In attesa...</span>
+  <!-- Dettaglio Posizioni Titoli -->
+  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+    <h3 class="font-semibold text-slate-800 text-sm mb-3">Dettaglio Titoli in Portafoglio</h3>
+    <div id="lista-asset" class="space-y-3">
+      <p class="text-slate-400 text-sm text-center py-4">Nessun titolo presente.</p>
+    </div>
   </div>
 
-  <!-- Lista Asset -->
-  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-    <h3 class="font-semibold text-slate-700 text-sm mb-3">Dettaglio Posizioni</h3>
-    <div id="lista-asset" class="space-y-3">
-      <p class="text-slate-400 text-sm text-center py-4">Nessun asset presente.</p>
+  <!-- SEZIONE 2: LIQUIDITÀ & STORICO -->
+  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+      <h3 class="font-semibold text-slate-800 text-sm">💶 Liquidità & Storico Mensile</h3>
+      <div class="flex gap-2">
+        <button onclick="scaricaModelloCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold py-1.5 px-2.5 rounded-lg border border-slate-200 transition">
+          📥 Modello CSV
+        </button>
+        <label class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-semibold py-1.5 px-2.5 rounded-lg border border-emerald-200 transition cursor-pointer">
+          📤 Importa CSV
+          <input type="file" id="csv-input" accept=".csv" class="hidden" onchange="importaCSV(event)">
+        </label>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="grid grid-cols-3 gap-2">
+        <input id="liq-mese" type="month" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none">
+        <input id="liq-conto" type="text" placeholder="Conto (es. CheBanca)" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none">
+        <input id="liq-importo" type="number" step="any" placeholder="Importo (€)" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none">
+      </div>
+      <button onclick="aggiungiLiquiditaManuale()" class="w-full bg-slate-800 text-white font-semibold py-2 rounded-xl text-xs hover:bg-slate-900 transition">
+        + Registra Voce Liquidità
+      </button>
+    </div>
+
+    <div class="space-y-2 pt-2">
+      <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Storico Registrato</h4>
+      <div id="lista-liquidita" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+        <p class="text-slate-400 text-xs text-center py-2">Nessun dato di liquidità.</p>
+      </div>
     </div>
   </div>
 
   <script>
-    let portafoglio = JSON.parse(localStorage.getItem('portafoglio_v5')) || JSON.parse(localStorage.getItem('portafoglio_v4')) || [];
+    // Stato dell'applicazione
+    let portafoglio = JSON.parse(localStorage.getItem('portafoglio_v5')) || [];
+    let storicoLiquidita = JSON.parse(localStorage.getItem('storico_liquidita_v1')) || [];
+    let dbFirebase = null;
+    let syncKeyGlobal = localStorage.getItem('firebase_sync_key') || '';
+
+    document.getElementById('liq-mese').value = new Date().toISOString().slice(0, 7);
 
     function mostraStato(messaggio, tipo = 'info') {
       const banner = document.getElementById('status-banner');
@@ -81,6 +158,104 @@
       else text.className = 'text-amber-300';
     }
 
+    function toggleCloudConfig() {
+      const panel = document.getElementById('cloud-config-panel');
+      panel.classList.toggle('hidden');
+    }
+
+    // INIZIALIZZAZIONE CLOUD FIREBASE
+    function inizializzaFirebase() {
+      const configSaved = localStorage.getItem('firebase_config_json');
+      const keySaved = localStorage.getItem('firebase_sync_key');
+
+      if (configSaved) document.getElementById('firebase-json').value = configSaved;
+      if (keySaved) document.getElementById('sync-key').value = keySaved;
+
+      if (configSaved && keySaved) {
+        try {
+          const configObj = JSON.parse(configSaved);
+          if (!firebase.apps.length) {
+            firebase.initializeApp(configObj);
+          }
+          dbFirebase = firebase.firestore();
+          syncKeyGlobal = keySaved.trim();
+
+          document.getElementById('cloud-status-icon').innerText = '🟢';
+          mostraStato('☁️ Connesso a Firebase. Sincronizzazione attiva!', 'success');
+
+          // Sincronizzazione / Download automatico dal Cloud
+          sincronizzaDaCloud();
+        } catch (e) {
+          console.error("Errore inizializzazione Firebase:", e);
+          document.getElementById('cloud-status-icon').innerText = '🔴';
+        }
+      }
+    }
+
+    function salvaConfigurazioneCloud() {
+      const jsonStr = document.getElementById('firebase-json').value.trim();
+      const keyStr = document.getElementById('sync-key').value.trim();
+
+      if (!jsonStr || !keyStr) {
+        alert('Inserisci sia la configurazione Firebase JSON che la Password/ID Portafoglio.');
+        return;
+      }
+
+      try {
+        JSON.parse(jsonStr); // Valida JSON
+        localStorage.setItem('firebase_config_json', jsonStr);
+        localStorage.setItem('firebase_sync_key', keyStr);
+        alert('Configurazione salvata con successo! L'app si collegherà al cloud.');
+        location.reload();
+      } catch (e) {
+        alert('Formato JSON non valido. Assicurati di copiare correttamente l'oggetto firebaseConfig.');
+      }
+    }
+
+    // Salva sia in LocalStorage che su Firebase Cloud
+    async function salvaDati() {
+      localStorage.setItem('portafoglio_v5', JSON.stringify(portafoglio));
+      localStorage.setItem('storico_liquidita_v1', JSON.stringify(storicoLiquidita));
+
+      if (dbFirebase && syncKeyGlobal) {
+        try {
+          await dbFirebase.collection('portafogli').doc(syncKeyGlobal).set({
+            portafoglio: portafoglio,
+            storicoLiquidita: storicoLiquidita,
+            ultimoAggiornamento: new Date().toISOString()
+          });
+          mostraStato('☁️ Dati salvati in Cloud!', 'success');
+        } catch (e) {
+          console.error("Errore salvataggio Cloud:", e);
+          mostraStato('⚠️ Errore salvataggio in Cloud.', 'error');
+        }
+      }
+    }
+
+    // Scarica dati da Firebase Cloud
+    async function sincronizzaDaCloud() {
+      if (!dbFirebase || !syncKeyGlobal) return;
+
+      try {
+        const doc = await dbFirebase.collection('portafogli').doc(syncKeyGlobal).get();
+        if (doc.exists) {
+          const data = doc.data();
+          if (data.portafoglio) portafoglio = data.portafoglio;
+          if (data.storicoLiquidita) storicoLiquidita = data.storicoLiquidita;
+
+          localStorage.setItem('portafoglio_v5', JSON.stringify(portafoglio));
+          localStorage.setItem('storico_liquidita_v1', JSON.stringify(storicoLiquidita));
+          disegnaInterfaccia();
+        } else {
+          // Se il documento sul cloud è nuovo, carica i dati locali attuali sul cloud
+          salvaDati();
+        }
+      } catch (e) {
+        console.error("Errore download Cloud:", e);
+      }
+    }
+
+    // Proxy Render per quotazioni
     async function fetchPrezzoProxy(ticker) {
       const symbol = ticker.trim().toUpperCase();
       const url = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
@@ -110,80 +285,103 @@
 
     function disegnaInterfaccia() {
       const listaElem = document.getElementById('lista-asset');
-      const totaleAttualeElem = document.getElementById('totale-attuale');
-      const totaleInvestitoElem = document.getElementById('totale-investito');
-      const totaleProfittoElem = document.getElementById('totale-profitto');
-      
       listaElem.innerHTML = '';
-      let totaleValoreAttuale = 0;
-      let totaleCapitaleInvestito = 0;
+      
+      let totaleInvestitoTitoli = 0;
+      let totaleValoreTitoli = 0;
 
       if (portafoglio.length === 0) {
-        listaElem.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Nessun asset presente.</p>';
-        totaleAttualeElem.innerText = '€0.00';
-        totaleInvestitoElem.innerText = '€0.00';
-        totaleProfittoElem.innerText = '€0.00 (0.00%)';
-        totaleProfittoElem.className = 'font-bold text-slate-700 text-sm';
-        return;
-      }
+        listaElem.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Nessun titolo presente.</p>';
+      } else {
+        portafoglio.forEach((item, index) => {
+          const pmc = item.pmc || item.prezzo || 0;
+          const prezzoAttuale = item.prezzo || pmc;
+          const nomeMostrato = item.nome && item.nome.trim() !== '' ? item.nome : item.ticker;
+          
+          const investitoAsset = item.quantita * pmc;
+          const valoreAttualeAsset = item.quantita * prezzoAttuale;
+          const profittoAsset = valoreAttualeAsset - investitoAsset;
+          const percAsset = investitoAsset > 0 ? (profittoAsset / investitoAsset) * 100 : 0;
 
-      portafoglio.forEach((item, index) => {
-        const pmc = item.pmc || item.prezzo || 0;
-        const prezzoAttuale = item.prezzo || pmc;
-        const nomeMostrato = item.nome && item.nome.trim() !== '' ? item.nome : item.ticker;
-        
-        const investitoAsset = item.quantita * pmc;
-        const valoreAttualeAsset = item.quantita * prezzoAttuale;
-        const profittoAsset = valoreAttualeAsset - investitoAsset;
-        const percAsset = investitoAsset > 0 ? (profittoAsset / investitoAsset) * 100 : 0;
+          totaleInvestitoTitoli += investitoAsset;
+          totaleValoreTitoli += valoreAttualeAsset;
 
-        totaleCapitaleInvestito += investitoAsset;
-        totaleValoreAttuale += valoreAttualeAsset;
+          const bgBadge = profittoAsset >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
+          const segno = profittoAsset >= 0 ? '+' : '';
 
-        const bgBadge = profittoAsset >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
-        const segno = profittoAsset >= 0 ? '+' : '';
-
-        listaElem.innerHTML += `
-          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
-            <div class="flex justify-between items-start">
-              <div>
-                <span class="font-bold text-slate-900 text-base">${nomeMostrato}</span>
-                <span class="text-xs text-slate-500 block font-mono">${item.ticker} • ${item.quantita} pz.</span>
+          listaElem.innerHTML += `
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="font-bold text-slate-900 text-base">${nomeMostrato}</span>
+                  <span class="text-xs text-slate-500 block font-mono">${item.ticker} • ${item.quantita} pz.</span>
+                </div>
+                <div class="text-right">
+                  <span class="font-bold text-slate-900 text-base">€${valoreAttualeAsset.toFixed(2)}</span>
+                  <span class="text-[11px] px-2 py-0.5 rounded-md font-semibold border ${bgBadge} block mt-0.5">
+                    ${segno}€${profittoAsset.toFixed(2)} (${segno}${percAsset.toFixed(2)}%)
+                  </span>
+                </div>
               </div>
-              <div class="text-right">
-                <span class="font-bold text-slate-900 text-base">€${valoreAttualeAsset.toFixed(2)}</span>
-                <span class="text-[11px] px-2 py-0.5 rounded-md font-semibold border ${bgBadge} block mt-0.5">
-                  ${segno}€${profittoAsset.toFixed(2)} (${segno}${percAsset.toFixed(2)}%)
-                </span>
-              </div>
-            </div>
 
-            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 text-xs text-slate-500">
-              <div>
-                <p>PMC: <strong class="text-slate-700">€${pmc.toFixed(2)}</strong></p>
-                <p>Investito: <strong class="text-slate-700">€${investitoAsset.toFixed(2)}</strong></p>
-              </div>
-              <div class="text-right">
-                <p>Prezzo Att.: <strong class="text-slate-700">€${prezzoAttuale.toFixed(2)}</strong></p>
-                <div class="flex gap-2 justify-end mt-1">
-                  <button onclick="modificaValoriManuale(${index})" class="text-[10px] text-blue-600 hover:underline font-semibold">✏️ Modifica</button>
-                  <button onclick="rimuoviAsset(${index})" class="text-[10px] text-red-500 hover:underline font-semibold">🗑️ Elimina</button>
+              <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 text-xs text-slate-500">
+                <div>
+                  <p>PMC: <strong class="text-slate-700">€${pmc.toFixed(2)}</strong></p>
+                  <p>Investito: <strong class="text-slate-700">€${investitoAsset.toFixed(2)}</strong></p>
+                </div>
+                <div class="text-right">
+                  <p>Prezzo Att.: <strong class="text-slate-700">€${prezzoAttuale.toFixed(2)}</strong></p>
+                  <div class="flex gap-2 justify-end mt-1">
+                    <button onclick="modificaValoriManuale(${index})" class="text-[10px] text-blue-600 hover:underline font-semibold">✏️ Modifica</button>
+                    <button onclick="rimuoviAsset(${index})" class="text-[10px] text-red-500 hover:underline font-semibold">🗑️ Elimina</button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        `;
-      });
+          `;
+        });
+      }
 
-      const profittoTotale = totaleValoreAttuale - totaleCapitaleInvestito;
-      const percTotale = totaleCapitaleInvestito > 0 ? (profittoTotale / totaleCapitaleInvestito) * 100 : 0;
-      const segnoTot = profittoTotale >= 0 ? '+' : '';
+      const listaLiqElem = document.getElementById('lista-liquidita');
+      listaLiqElem.innerHTML = '';
+      let totaleLiquiditaAttuale = 0;
 
-      totaleAttualeElem.innerText = `€${totaleValoreAttuale.toFixed(2)}`;
-      totaleInvestitoElem.innerText = `€${totaleCapitaleInvestito.toFixed(2)}`;
+      if (storicoLiquidita.length === 0) {
+        listaLiqElem.innerHTML = '<p class="text-slate-400 text-xs text-center py-2">Nessun dato di liquidità presente.</p>';
+      } else {
+        storicoLiquidita.sort((a, b) => b.mese.localeCompare(a.mese));
+        const mesePiuRecente = storicoLiquidita[0].mese;
+
+        storicoLiquidita.forEach((item, index) => {
+          if (item.mese === mesePiuRecente) totaleLiquiditaAttuale += item.importo;
+
+          listaLiqElem.innerHTML += `
+            <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+              <div>
+                <span class="font-bold text-slate-800">${item.conto}</span>
+                <span class="text-[10px] text-slate-400 font-mono block">${item.mese}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-bold text-slate-900">€${item.importo.toFixed(2)}</span>
+                <button onclick="rimuoviLiquidita(${index})" class="text-red-400 hover:text-red-600 font-bold text-sm">✕</button>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      const profittoTotaleTitoli = totaleValoreTitoli - totaleInvestitoTitoli;
+      const percTotaleTitoli = totaleInvestitoTitoli > 0 ? (profittoTotaleTitoli / totaleInvestitoTitoli) * 100 : 0;
+      const segnoTot = profittoTotaleTitoli >= 0 ? '+' : '';
+      const patrimonioNettoComplessivo = totaleValoreTitoli + totaleLiquiditaAttuale;
+
+      document.getElementById('totale-netto').innerText = `€${patrimonioNettoComplessivo.toFixed(2)}`;
+      document.getElementById('totale-titoli').innerText = `€${totaleValoreTitoli.toFixed(2)}`;
+      document.getElementById('totale-liquidita').innerText = `€${totaleLiquiditaAttuale.toFixed(2)}`;
       
-      totaleProfittoElem.innerText = `${segnoTot}€${profittoTotale.toFixed(2)} (${segnoTot}${percTotale.toFixed(2)}%)`;
-      totaleProfittoElem.className = `font-bold text-sm ${profittoTotale >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      const elProfitto = document.getElementById('totale-profitto');
+      elProfitto.innerText = `${segnoTot}€${profittoTotaleTitoli.toFixed(2)} (${segnoTot}${percTotaleTitoli.toFixed(2)}%)`;
+      elProfitto.className = `font-bold text-sm ${profittoTotaleTitoli >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
     }
 
     async function aggiungiAsset() {
@@ -200,13 +398,8 @@
       let pmc = parseFloat(pmcInput.value);
       let prezzoAttuale = parseFloat(prezzoAttualeInput.value);
 
-      if (!ticker || isNaN(quantita) || quantita <= 0) {
-        alert('Inserisci un Ticker e una Quantità valida.');
-        return;
-      }
-
-      if (isNaN(pmc) || pmc <= 0) {
-        alert('Inserisci il Prezzo Medio di Carico (PMC).');
+      if (!ticker || isNaN(quantita) || quantita <= 0 || isNaN(pmc) || pmc <= 0) {
+        alert('Compila correttamente Ticker, Quantità e PMC.');
         return;
       }
 
@@ -219,7 +412,6 @@
       }
 
       if (!prezzoAttuale || isNaN(prezzoAttuale)) {
-        mostraStato(`⚠️ Impostato il PMC come prezzo attuale per ${ticker}.`, 'amber');
         prezzoAttuale = pmc;
       }
 
@@ -236,18 +428,80 @@
         portafoglio.push({ ticker, nome: nome || ticker, quantita, pmc, prezzo: prezzoAttuale });
       }
 
-      localStorage.setItem('portafoglio_v5', JSON.stringify(portafoglio));
+      salvaDati();
       disegnaInterfaccia();
-      mostraStato(`✅ ${ticker} aggiunto con successo!`, 'success');
 
       tickerInput.value = '';
       nomeInput.value = '';
       quantitaInput.value = '';
       pmcInput.value = '';
       prezzoAttualeInput.value = '';
-
-      btnAdd.innerText = '+ Aggiungi al Portafoglio';
+      btnAdd.innerText = '+ Aggiungi Titolo';
       btnAdd.disabled = false;
+    }
+
+    function aggiungiLiquiditaManuale() {
+      const meseInput = document.getElementById('liq-mese').value;
+      const contoInput = document.getElementById('liq-conto').value.trim();
+      const importoInput = parseFloat(document.getElementById('liq-importo').value);
+
+      if (!meseInput || !contoInput || isNaN(importoInput)) {
+        alert('Compila Mese, Conto e Importo.');
+        return;
+      }
+
+      storicoLiquidita.push({ mese: meseInput, conto: contoInput, importo: importoInput });
+      salvaDati();
+      disegnaInterfaccia();
+
+      document.getElementById('liq-conto').value = '';
+      document.getElementById('liq-importo').value = '';
+    }
+
+    function rimuoviLiquidita(index) {
+      storicoLiquidita.splice(index, 1);
+      salvaDati();
+      disegnaInterfaccia();
+    }
+
+    function scaricaModelloCSV() {
+      const contenutoCSV = "Mese,Conto,Importo\n2026-07,Conto Corrente,3500.00\n2026-07,Conto Deposito,12000.00";
+      const blob = new Blob([contenutoCSV], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', 'modello_liquidita.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function importaCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const testo = e.target.result;
+        const righe = testo.split(/\r\n|\n/);
+
+        righe.forEach((riga, idx) => {
+          if (idx === 0 || !riga.trim()) return;
+          const colonne = riga.includes(';') ? riga.split(';') : riga.split(',');
+          if (colonne.length >= 3) {
+            const mese = colonne[0].trim();
+            const conto = colonne[1].trim();
+            const importo = parseFloat(colonne[2].replace(',', '.').trim());
+            if (mese && conto && !isNaN(importo)) {
+              storicoLiquidita.push({ mese, conto, importo });
+            }
+          }
+        });
+
+        salvaDati();
+        disegnaInterfaccia();
+        event.target.value = '';
+      };
+      reader.readAsText(file);
     }
 
     async function aggiornaTuttiIPrezzi() {
@@ -266,23 +520,20 @@
         }
       }
 
-      localStorage.setItem('portafoglio_v5', JSON.stringify(portafoglio));
+      salvaDati();
       disegnaInterfaccia();
 
       const ora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      document.getElementById('last-update').innerText = `Ultimo aggiornamento: oggi alle ${ora}`;
-      
-      mostraStato(`✅ Prezzi aggiornati: ${aggiornati}/${portafoglio.length} titoli sincronizzati.`, 'success');
+      document.getElementById('last-update').innerText = `Ultimo aggiornamento titoli: oggi alle ${ora}`;
       btn.disabled = false;
     }
 
     function modificaValoriManuale(index) {
       const asset = portafoglio[index];
-      
-      const nuovoNome = prompt(`Modifica Nome Personalizzato per ${asset.ticker}:`, asset.nome || asset.ticker);
-      const nuovaQuantita = prompt(`Modifica Quantità per ${asset.ticker}:`, asset.quantita);
-      const nuovoPmc = prompt(`Modifica PMC (Prezzo Medio di Carico) in €:`, asset.pmc || asset.prezzo);
-      const nuovoPrezzo = prompt(`Modifica Prezzo Attuale in €:`, asset.prezzo);
+      const nuovoNome = prompt(`Modifica Nome:`, asset.nome || asset.ticker);
+      const nuovaQuantita = prompt(`Modifica Quantità:`, asset.quantita);
+      const nuovoPmc = prompt(`Modifica PMC (€):`, asset.pmc || asset.prezzo);
+      const nuovoPrezzo = prompt(`Modifica Prezzo Attuale (€):`, asset.prezzo);
 
       const valQt = parseFloat(nuovaQuantita);
       const valPmc = parseFloat(nuovoPmc);
@@ -293,18 +544,18 @@
       if (!isNaN(valPmc) && valPmc > 0) asset.pmc = valPmc;
       if (!isNaN(valPrezzo) && valPrezzo > 0) asset.prezzo = valPrezzo;
 
-      localStorage.setItem('portafoglio_v5', JSON.stringify(portafoglio));
+      salvaDati();
       disegnaInterfaccia();
-      mostraStato(`✏️ Posizione ${asset.ticker} aggiornata`, 'success');
     }
 
     function rimuoviAsset(index) {
       portafoglio.splice(index, 1);
-      localStorage.setItem('portafoglio_v5', JSON.stringify(portafoglio));
+      salvaDati();
       disegnaInterfaccia();
-      mostraStato('🗑️ Posizione eliminata.', 'info');
     }
 
+    // Avvio
+    inizializzaFirebase();
     disegnaInterfaccia();
   </script>
 </body>
