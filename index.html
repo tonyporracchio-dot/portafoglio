@@ -15,24 +15,36 @@
     </button>
   </div>
 
-  <!-- Scheda Totale Portafoglio -->
-  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 text-center">
-    <p class="text-slate-500 text-sm font-medium">Patrimonio Totale</p>
-    <h2 id="totale" class="text-3xl font-extrabold text-emerald-600 my-1">€0.00</h2>
-    <p id="last-update" class="text-xs text-slate-400">Ultimo aggiornamento: Mai</p>
+  <!-- Scheda Riepilogo Portafoglio -->
+  <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
+    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider text-center">Patrimonio Totale (Valore Attuale)</p>
+    <h2 id="totale-attuale" class="text-3xl font-black text-slate-900 text-center my-1">€0.00</h2>
+    
+    <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-100 text-center text-xs">
+      <div>
+        <p class="text-slate-400 font-medium">Capitale Investito</p>
+        <p id="totale-investito" class="font-bold text-slate-700 text-sm">€0.00</p>
+      </div>
+      <div>
+        <p class="text-slate-400 font-medium">Profitto / Perdita</p>
+        <p id="totale-profitto" class="font-bold text-slate-700 text-sm">€0.00 (0.00%)</p>
+      </div>
+    </div>
+    <p id="last-update" class="text-[10px] text-slate-400 text-center mt-3">Ultimo aggiornamento: Mai</p>
   </div>
 
   <!-- Form Inserimento Posizione -->
   <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 space-y-3">
-    <h3 class="font-semibold text-slate-700 text-sm">Aggiungi Titolo / Crypto</h3>
-    <input id="ticker" type="text" placeholder="Ticker (es. AAPL, TSLA, MWRD.MI, BTC-USD)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <h3 class="font-semibold text-slate-700 text-sm">Aggiungi Titolo / ETF / Crypto</h3>
+    <input id="ticker" type="text" placeholder="Ticker (es. AAPL, SWDA.MI, MWRD.MI)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500">
     
     <div class="grid grid-cols-2 gap-2">
-      <input id="quantita" type="number" step="any" placeholder="Quantità" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <input id="prezzo-manuale" type="number" step="any" placeholder="Prezzo (€ opzionale)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="quantita" type="number" step="any" placeholder="Quantità posseduta" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="pmc" type="number" step="any" placeholder="PMC (€ Prezzo Acquisto)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
     </div>
 
-    <p class="text-[10px] text-slate-400">Se lasci il prezzo vuoto, l'app interrogherà il tuo proxy su Render.</p>
+    <input id="prezzo-manuale" type="number" step="any" placeholder="Prezzo Attuale (€ opzionale)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <p class="text-[10px] text-slate-400">Se lasci il Prezzo Attuale vuoto, verrà scaricato in automatico via Render proxy.</p>
 
     <button onclick="aggiungiAsset()" id="btn-add" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-blue-700 transition">
       + Aggiungi al Portafoglio
@@ -47,13 +59,13 @@
   <!-- Lista Asset -->
   <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
     <h3 class="font-semibold text-slate-700 text-sm mb-3">Dettaglio Posizioni</h3>
-    <div id="lista-asset" class="space-y-2">
+    <div id="lista-asset" class="space-y-3">
       <p class="text-slate-400 text-sm text-center py-4">Nessun asset presente.</p>
     </div>
   </div>
 
   <script>
-    let portafoglio = JSON.parse(localStorage.getItem('portafoglio_v3')) || [];
+    let portafoglio = JSON.parse(localStorage.getItem('portafoglio_v4')) || [];
 
     function mostraStato(messaggio, tipo = 'info') {
       const banner = document.getElementById('status-banner');
@@ -65,14 +77,13 @@
       else text.className = 'text-amber-300';
     }
 
-    // Funzione mirata sul tuo endpoint Render
+    // Interroga il proxy personale su Render
     async function fetchPrezzoProxy(ticker) {
       const symbol = ticker.trim().toUpperCase();
       const url = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
 
       try {
         const controller = new AbortController();
-        // Timeout di 25 secondi per coprire l'eventuale risveglio (cold start) di Render
         const timeoutId = setTimeout(() => controller.abort(), 25000);
 
         const res = await fetch(url, { signal: controller.signal });
@@ -80,109 +91,156 @@
 
         if (res.ok) {
           const data = await res.json();
-          
-          // Estrazione flessibile del valore numerico dal JSON
           const price = data?.price 
                      || data?.regularMarketPrice 
                      || data?.c 
                      || data?.chart?.result?.[0]?.meta?.regularMarketPrice 
                      || (typeof data === 'number' ? data : null);
 
-          if (price && typeof price === 'number') {
-            return price;
-          }
+          if (price && typeof price === 'number') return price;
         }
       } catch (e) {
-        console.warn(`Errore durante la chiamata al proxy per ${symbol}:`, e);
+        console.warn(`Errore proxy per ${symbol}:`, e);
       }
       return null;
     }
 
     function disegnaInterfaccia() {
       const listaElem = document.getElementById('lista-asset');
-      const totaleElem = document.getElementById('totale');
+      const totaleAttualeElem = document.getElementById('totale-attuale');
+      const totaleInvestitoElem = document.getElementById('totale-investito');
+      const totaleProfittoElem = document.getElementById('totale-profitto');
       
       listaElem.innerHTML = '';
-      let totaleValore = 0;
+      let totaleValoreAttuale = 0;
+      let totaleCapitaleInvestito = 0;
 
       if (portafoglio.length === 0) {
         listaElem.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Nessun asset presente.</p>';
-        totaleElem.innerText = '€0.00';
+        totaleAttualeElem.innerText = '€0.00';
+        totaleInvestitoElem.innerText = '€0.00';
+        totaleProfittoElem.innerText = '€0.00 (0.00%)';
+        totaleProfittoElem.className = 'font-bold text-slate-700 text-sm';
         return;
       }
 
       portafoglio.forEach((item, index) => {
-        const valoreTotaleAsset = item.quantita * (item.prezzo || 0);
-        totaleValore += valoreTotaleAsset;
+        const pmc = item.pmc || item.prezzo || 0;
+        const prezzoAttuale = item.prezzo || pmc;
+        
+        const investitoAsset = item.quantita * pmc;
+        const valoreAttualeAsset = item.quantita * prezzoAttuale;
+        const profittoAsset = valoreAttualeAsset - investitoAsset;
+        const percAsset = investitoAsset > 0 ? (profittoAsset / investitoAsset) * 100 : 0;
+
+        totaleCapitaleInvestito += investitoAsset;
+        totaleValoreAttuale += valoreAttualeAsset;
+
+        const coloreProfitto = profittoAsset >= 0 ? 'text-emerald-600' : 'text-rose-600';
+        const bgBadge = profittoAsset >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200';
+        const segno = profittoAsset >= 0 ? '+' : '';
 
         listaElem.innerHTML += `
-          <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <div>
-              <p class="font-bold text-slate-800">${item.ticker}</p>
-              <p class="text-xs text-slate-500">${item.quantita} pz. × €${(item.prezzo || 0).toFixed(2)}</p>
+          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-slate-900 text-base">${item.ticker}</span>
+                <span class="text-xs text-slate-500 block">${item.quantita} pz.</span>
+              </div>
+              <div class="text-right">
+                <span class="font-bold text-slate-900 text-base">€${valoreAttualeAsset.toFixed(2)}</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-md font-semibold border ${bgBadge} block mt-0.5">
+                  ${segno}€${profittoAsset.toFixed(2)} (${segno}${percAsset.toFixed(2)}%)
+                </span>
+              </div>
             </div>
-            <div class="text-right">
-              <p class="font-bold text-slate-900">€${valoreTotaleAsset.toFixed(2)}</p>
-              <div class="flex gap-2 justify-end mt-1">
-                <button onclick="modificaPrezzoManuale(${index})" class="text-[10px] text-blue-600 hover:underline">Modifica €</button>
-                <button onclick="rimuoviAsset(${index})" class="text-[10px] text-red-500 hover:underline">Elimina</button>
+
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 text-xs text-slate-500">
+              <div>
+                <p>PMC: <strong class="text-slate-700">€${pmc.toFixed(2)}</strong></p>
+                <p>Investito: <strong class="text-slate-700">€${investitoAsset.toFixed(2)}</strong></p>
+              </div>
+              <div class="text-right">
+                <p>Prezzo Att.: <strong class="text-slate-700">€${prezzoAttuale.toFixed(2)}</strong></p>
+                <div class="flex gap-2 justify-end mt-1">
+                  <button onclick="modificaValoriManuale(${index})" class="text-[10px] text-blue-600 hover:underline font-semibold">Modifica</button>
+                  <button onclick="rimuoviAsset(${index})" class="text-[10px] text-red-500 hover:underline font-semibold">Elimina</button>
+                </div>
               </div>
             </div>
           </div>
         `;
       });
 
-      totaleElem.innerText = `€${totaleValore.toFixed(2)}`;
+      const profittoTotale = totaleValoreAttuale - totaleCapitaleInvestito;
+      const percTotale = totaleCapitaleInvestito > 0 ? (profittoTotale / totaleCapitaleInvestito) * 100 : 0;
+      const segnoTot = profittoTotale >= 0 ? '+' : '';
+
+      totaleAttualeElem.innerText = `€${totaleValoreAttuale.toFixed(2)}`;
+      totaleInvestitoElem.innerText = `€${totaleCapitaleInvestito.toFixed(2)}`;
+      
+      totaleProfittoElem.innerText = `${segnoTot}€${profittoTotale.toFixed(2)} (${segnoTot}${percTotale.toFixed(2)}%)`;
+      totaleProfittoElem.className = `font-bold text-sm ${profittoTotale >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
     }
 
     async function aggiungiAsset() {
       const tickerInput = document.getElementById('ticker');
       const quantitaInput = document.getElementById('quantita');
-      const prezzoInput = document.getElementById('prezzo-manuale');
+      const pmcInput = document.getElementById('pmc');
+      const prezzoAttualeInput = document.getElementById('prezzo-manuale');
       const btnAdd = document.getElementById('btn-add');
 
       const ticker = tickerInput.value.trim().toUpperCase();
       const quantita = parseFloat(quantitaInput.value);
-      let prezzo = parseFloat(prezzoInput.value);
+      let pmc = parseFloat(pmcInput.value);
+      let prezzoAttuale = parseFloat(prezzoAttualeInput.value);
 
       if (!ticker || isNaN(quantita) || quantita <= 0) {
         alert('Inserisci un Ticker e una Quantità valida.');
         return;
       }
 
-      btnAdd.innerText = 'Ricerca via Proxy in corso...';
+      if (isNaN(pmc) || pmc <= 0) {
+        alert('Inserisci il Prezzo Medio di Carico (PMC) per calcolare il guadagno/perdita.');
+        return;
+      }
+
+      btnAdd.innerText = 'Ricerca prezzo attuale...';
       btnAdd.disabled = true;
 
-      if (isNaN(prezzo) || prezzo <= 0) {
-        mostraStato(`⏳ Interrogo il proxy per ${ticker} (attendi qualche secondo se il server è in risveglio)...`);
-        prezzo = await fetchPrezzoProxy(ticker);
+      // Scarica il prezzo attuale dal proxy solo se non è stato inserito a mano
+      if (isNaN(prezzoAttuale) || prezzoAttuale <= 0) {
+        mostraStato(`⏳ Interrogo il proxy per ${ticker}...`);
+        prezzoAttuale = await fetchPrezzoProxy(ticker);
       }
 
-      if (!prezzo || isNaN(prezzo)) {
-        mostraStato(`⚠️ Risposta non valida per ${ticker}. Inserimento manuale richiesto.`, 'error');
-        const inserito = prompt(`Impossibile scaricare il prezzo per "${ticker}". Inserisci il prezzo unitario attuale in €:`);
-        prezzo = parseFloat(inserito);
+      // Fallback: se l'API non trova il prezzo, usa il PMC come prezzo iniziale
+      if (!prezzoAttuale || isNaN(prezzoAttuale)) {
+        mostraStato(`⚠️ Impostato il PMC come prezzo attuale per ${ticker}. Puoi aggiornarlo in seguito.`, 'amber');
+        prezzoAttuale = pmc;
       }
 
-      if (isNaN(prezzo) || prezzo <= 0) {
-        alert('Operazione annullata.');
+      const esistente = portafoglio.find(a => a.ticker === ticker);
+      if (esistente) {
+        // Ricalcola il PMC ponderato se il titolo esiste già
+        const totalePezziNuovi = esistente.quantita + quantita;
+        const nuovoPmc = ((esistente.quantita * (esistente.pmc || esistente.prezzo)) + (quantita * pmc)) / totalePezziNuovi;
+        
+        esistente.quantita = totalePezziNuovi;
+        esistente.pmc = nuovoPmc;
+        esistente.prezzo = prezzoAttuale;
       } else {
-        const esistente = portafoglio.find(a => a.ticker === ticker);
-        if (esistente) {
-          esistente.quantita += quantita;
-          esistente.prezzo = prezzo;
-        } else {
-          portafoglio.push({ ticker, quantita, prezzo });
-        }
-
-        localStorage.setItem('portafoglio_v3', JSON.stringify(portafoglio));
-        disegnaInterfaccia();
-        mostraStato(`✅ Asset ${ticker} aggiunto con prezzo €${prezzo.toFixed(2)}`, 'success');
-
-        tickerInput.value = '';
-        quantitaInput.value = '';
-        prezzoInput.value = '';
+        portafoglio.push({ ticker, quantita, pmc, prezzo: prezzoAttuale });
       }
+
+      localStorage.setItem('portafoglio_v4', JSON.stringify(portafoglio));
+      disegnaInterfaccia();
+      mostraStato(`✅ ${ticker} aggiunto con successo!`, 'success');
+
+      tickerInput.value = '';
+      quantitaInput.value = '';
+      pmcInput.value = '';
+      prezzoAttualeInput.value = '';
 
       btnAdd.innerText = '+ Aggiungi al Portafoglio';
       btnAdd.disabled = false;
@@ -204,7 +262,7 @@
         }
       }
 
-      localStorage.setItem('portafoglio_v3', JSON.stringify(portafoglio));
+      localStorage.setItem('portafoglio_v4', JSON.stringify(portafoglio));
       disegnaInterfaccia();
 
       const ora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -214,21 +272,25 @@
       btn.disabled = false;
     }
 
-    function modificaPrezzoManuale(index) {
+    function modificaValoriManuale(index) {
       const asset = portafoglio[index];
-      const nuovoPrezzo = prompt(`Inserisci il nuovo prezzo unitario in € per ${asset.ticker}:`, asset.prezzo);
-      const val = parseFloat(nuovoPrezzo);
-      if (!isNaN(val) && val > 0) {
-        asset.prezzo = val;
-        localStorage.setItem('portafoglio_v3', JSON.stringify(portafoglio));
-        disegnaInterfaccia();
-        mostraStato(`✏️ Prezzo aggiornato per ${asset.ticker}: €${val.toFixed(2)}`, 'success');
-      }
+      const nuovoPmc = prompt(`Modifica PMC (Prezzo Medio di Carico) in € per ${asset.ticker}:`, asset.pmc || asset.prezzo);
+      const nuovoPrezzo = prompt(`Modifica Prezzo Attuale in € per ${asset.ticker}:`, asset.prezzo);
+      
+      const valPmc = parseFloat(nuovoPmc);
+      const valPrezzo = parseFloat(nuovoPrezzo);
+
+      if (!isNaN(valPmc) && valPmc > 0) asset.pmc = valPmc;
+      if (!isNaN(valPrezzo) && valPrezzo > 0) asset.prezzo = valPrezzo;
+
+      localStorage.setItem('portafoglio_v4', JSON.stringify(portafoglio));
+      disegnaInterfaccia();
+      mostraStato(`✏️ Valori aggiornati per ${asset.ticker}`, 'success');
     }
 
     function rimuoviAsset(index) {
       portafoglio.splice(index, 1);
-      localStorage.setItem('portafoglio_v3', JSON.stringify(portafoglio));
+      localStorage.setItem('portafoglio_v4', JSON.stringify(portafoglio));
       disegnaInterfaccia();
       mostraStato('🗑️ Posizione eliminata.', 'info');
     }
