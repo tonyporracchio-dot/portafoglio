@@ -68,12 +68,13 @@
       <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
         <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Patrimonio Totale</span>
         <div id="total-val" class="text-2xl font-bold text-white mt-1">€ 0,00</div>
+        <div id="daily-total-val" class="text-xs font-semibold mt-1 text-slate-400">Oggi: € 0,00 (0.00%)</div>
       </div>
 
       <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
         <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Valore Titoli</span>
         <div id="invested-val" class="text-2xl font-bold text-blue-400 mt-1">€ 0,00</div>
-        <div id="gain-loss-val" class="text-xs font-semibold mt-1 text-slate-400">Profitto: € 0,00 (0.00%)</div>
+        <div id="gain-loss-val" class="text-xs font-semibold mt-1 text-slate-400">Totale: € 0,00 (0.00%)</div>
       </div>
 
       <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
@@ -92,7 +93,6 @@
       <div class="px-4 py-3 border-b border-slate-700/60 flex justify-between items-center">
         <h2 class="font-medium text-slate-300 text-xs uppercase tracking-wider">Titoli & ETF</h2>
         
-        <!-- Pulsante minimale e discreto -->
         <button 
           id="btn-add-asset"
           onclick="openModal()" 
@@ -113,13 +113,14 @@
               <th class="py-2.5 px-4 text-right">Prezzo Med.</th>
               <th class="py-2.5 px-4 text-right">Prezzo Att.</th>
               <th class="py-2.5 px-4 text-right">Valore</th>
-              <th class="py-2.5 px-4 text-right">Rendimento</th>
+              <th class="py-2.5 px-4 text-right">Var. Oggi</th>
+              <th class="py-2.5 px-4 text-right">Rendimento Tot.</th>
               <th class="py-2.5 px-4 text-center">Azione</th>
             </tr>
           </thead>
           <tbody id="assets-table-body" class="divide-y divide-slate-700/40">
             <tr>
-              <td colspan="7" class="py-8 text-center text-slate-500 text-xs">
+              <td colspan="8" class="py-8 text-center text-slate-500 text-xs">
                 Effettua l'accesso per caricare i tuoi dati.
               </td>
             </tr>
@@ -144,7 +145,7 @@
           <input type="text" id="asset-name" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
         </div>
 
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs text-slate-400 mb-1">Quantità</label>
             <input type="number" step="any" id="asset-qty" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
@@ -153,9 +154,16 @@
             <label class="block text-xs text-slate-400 mb-1">Prezzo Med. (€)</label>
             <input type="number" step="any" id="asset-buy-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
           </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Prezzo Att. (€)</label>
+            <label class="block text-xs text-slate-400 mb-1">Prezzo Attuale (€)</label>
             <input type="number" step="any" id="asset-curr-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Var. Giornaliera (%)</label>
+            <input type="number" step="any" id="asset-daily-change" placeholder="es. +1.25" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
           </div>
         </div>
 
@@ -241,25 +249,44 @@
     function updateUI() {
       let totalInvestedVal = 0;
       let totalCostVal = 0;
+      let totalDailyGainLoss = 0;
 
       portfolioData.assets.forEach(a => {
-        totalInvestedVal += (a.qty * a.currPrice);
+        const val = a.qty * a.currPrice;
+        totalInvestedVal += val;
         totalCostVal += (a.qty * a.buyPrice);
+
+        const dailyPerc = a.dailyChange || 0;
+        // Calcolo del guadagno/perdita di oggi sul singolo titolo
+        const previousVal = val / (1 + (dailyPerc / 100));
+        const dailyGainLoss = val - previousVal;
+        totalDailyGainLoss += dailyGainLoss;
       });
 
       const totalCash = portfolioData.cash || 0;
       const totalPortfolio = totalInvestedVal + totalCash;
       const totalProfit = totalInvestedVal - totalCostVal;
       const totalProfitPerc = totalCostVal > 0 ? (totalProfit / totalCostVal) * 100 : 0;
+      
+      const totalDailyPerc = (totalPortfolio - totalDailyGainLoss) > 0 
+        ? (totalDailyGainLoss / (totalPortfolio - totalDailyGainLoss)) * 100 
+        : 0;
 
       document.getElementById('total-val').innerText = formatEUR(totalPortfolio);
       document.getElementById('invested-val').innerText = formatEUR(totalInvestedVal);
       document.getElementById('cash-val').innerText = formatEUR(totalCash);
 
+      // Variazione Giornaliera Totale
+      const dailyEl = document.getElementById('daily-total-val');
+      const isDailyPos = totalDailyGainLoss >= 0;
+      dailyEl.className = `text-xs font-semibold mt-1 ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}`;
+      dailyEl.innerText = `Oggi: ${isDailyPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${totalDailyPerc.toFixed(2)}%)`;
+
+      // Rendimento Totale
       const glEl = document.getElementById('gain-loss-val');
       const isPos = totalProfit >= 0;
       glEl.className = `text-xs font-semibold mt-1 ${isPos ? 'text-emerald-400' : 'text-rose-400'}`;
-      glEl.innerText = `Profitto: ${isPos ? '+' : ''}${formatEUR(totalProfit)} (${totalProfitPerc.toFixed(2)}%)`;
+      glEl.innerText = `Totale: ${isPos ? '+' : ''}${formatEUR(totalProfit)} (${totalProfitPerc.toFixed(2)}%)`;
 
       renderTable();
     }
@@ -268,12 +295,12 @@
       const tbody = document.getElementById('assets-table-body');
       
       if (!currentUser) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-500 text-xs">Effettua l'accesso per visualizzare il portafoglio.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Effettua l'accesso per visualizzare il portafoglio.</td></tr>`;
         return;
       }
 
       if (portfolioData.assets.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-500 text-xs">Nessun titolo. Clicca sul pulsante "+ Aggiungi" in alto a destra nella tabella.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Nessun titolo. Clicca sul pulsante "+ Aggiungi" in alto a destra nella tabella.</td></tr>`;
         return;
       }
 
@@ -284,6 +311,9 @@
         const profitPerc = cost > 0 ? (profit / cost) * 100 : 0;
         const isPos = profit >= 0;
 
+        const dailyPerc = item.dailyChange || 0;
+        const isDailyPos = dailyPerc >= 0;
+
         return `
           <tr class="hover:bg-slate-800/30 transition-colors">
             <td class="py-2.5 px-4 font-medium text-white text-xs">${item.name}</td>
@@ -291,11 +321,24 @@
             <td class="py-2.5 px-4 text-right text-xs">${formatEUR(item.buyPrice)}</td>
             <td class="py-2.5 px-4 text-right text-xs">${formatEUR(item.currPrice)}</td>
             <td class="py-2.5 px-4 text-right font-medium text-white text-xs">${formatEUR(val)}</td>
+            
+            <!-- Variazione Giornaliera -->
+            <td class="py-2.5 px-4 text-right font-medium text-xs ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
+              ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
+            </td>
+
+            <!-- Rendimento Totale -->
             <td class="py-2.5 px-4 text-right font-medium text-xs ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
               ${isPos ? '+' : ''}${formatEUR(profit)} (${profitPerc.toFixed(2)}%)
             </td>
-            <td class="py-2.5 px-4 text-center">
-              <button onclick="deleteAsset(${index})" class="text-slate-600 hover:text-rose-400 p-1 transition-colors">
+
+            <td class="py-2.5 px-4 text-center flex justify-center gap-1">
+              <button onclick="editAsset(${index})" class="text-slate-500 hover:text-blue-400 p-1 transition-colors" title="Modifica prezzo/variazione">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+              <button onclick="deleteAsset(${index})" class="text-slate-600 hover:text-rose-400 p-1 transition-colors" title="Elimina">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
@@ -321,12 +364,31 @@
       const qty = parseFloat(document.getElementById('asset-qty').value);
       const buyPrice = parseFloat(document.getElementById('asset-buy-price').value);
       const currPrice = parseFloat(document.getElementById('asset-curr-price').value);
+      const dailyChange = parseFloat(document.getElementById('asset-daily-change').value) || 0;
 
       if (!name || isNaN(qty) || isNaN(buyPrice) || isNaN(currPrice)) return;
 
-      portfolioData.assets.push({ name, qty, buyPrice, currPrice });
+      portfolioData.assets.push({ name, qty, buyPrice, currPrice, dailyChange });
       saveUserData();
       closeModal();
+    }
+
+    function editAsset(index) {
+      const asset = portfolioData.assets[index];
+      const newCurrPrice = prompt(`Nuovo Prezzo Attuale per ${asset.name} (€):`, asset.currPrice);
+      if (newCurrPrice === null) return;
+      
+      const newDailyChange = prompt(`Variazione Giornaliera per ${asset.name} (%):`, asset.dailyChange || 0);
+      if (newDailyChange === null) return;
+
+      const currP = parseFloat(newCurrPrice);
+      const dailyC = parseFloat(newDailyChange);
+
+      if (!isNaN(currP) && !isNaN(dailyC)) {
+        portfolioData.assets[index].currPrice = currP;
+        portfolioData.assets[index].dailyChange = dailyC;
+        saveUserData();
+      }
     }
 
     function deleteAsset(index) {
