@@ -1,0 +1,23 @@
+{
+  "name": "Mio Patrimonio",
+  "short_name": "Patrimonio",
+  "description": "Gestione e monitoraggio del patrimonio personale",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/emoji/192/chart-increasing-emoji.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://img.icons8.com/emoji/512/chart-increasing-emoji.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
