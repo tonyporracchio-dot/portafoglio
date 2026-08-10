@@ -517,10 +517,10 @@
         totalInvestedVal += val;
         totalCostVal += (qty * buyPrice);
 
-        // CALCOLO RIGOROSO VARIAZIONE GIORNALIERA PATRIMONIALE
+        // FORMULA CORRETTA: Calcolo variazione prezzo unitario * numero quote
         const dailyPerc = a.dailyChange || 0;
-        const prevVal = dailyPerc !== 0 ? val / (1 + (dailyPerc / 100)) : val;
-        const assetDailyEuro = val - prevVal;
+        const prevUnitPrice = dailyPerc !== 0 ? currPrice / (1 + (dailyPerc / 100)) : currPrice;
+        const assetDailyEuro = (currPrice - prevUnitPrice) * qty;
         totalDailyGainLoss += assetDailyEuro;
       });
 
@@ -588,8 +588,8 @@
         const isPos = profit >= 0;
 
         const dailyPerc = item.dailyChange || 0;
-        const prevVal = dailyPerc !== 0 ? val / (1 + (dailyPerc / 100)) : val;
-        const dailyEuro = val - prevVal;
+        const prevUnitPrice = dailyPerc !== 0 ? currPrice / (1 + (dailyPerc / 100)) : currPrice;
+        const dailyEuro = (currPrice - prevUnitPrice) * qty;
         const isDailyPos = dailyEuro >= 0;
 
         return `
@@ -741,7 +741,7 @@
       if (form) form.reset();
     }
 
-    // SALVATAGGIO TITOLO (INSERIMENTO O EDITA PMC)
+    // SALVATAGGIO TITOLO
     function saveAsset(e) {
       e.preventDefault();
       const editingIndex = parseInt(document.getElementById('editing-index').value, 10);
@@ -756,19 +756,16 @@
       if (!ticker || isNaN(qty) || isNaN(buyPrice)) return;
 
       if (editingIndex >= 0 && portfolioData.assets[editingIndex]) {
-        // Modifica titolo esistente (Aggiornamento PMC)
         const oldCurrPrice = portfolioData.assets[editingIndex].currPrice;
         portfolioData.assets[editingIndex].ticker = ticker;
         portfolioData.assets[editingIndex].name = name;
         portfolioData.assets[editingIndex].qty = qty;
         portfolioData.assets[editingIndex].buyPrice = buyPrice;
         
-        // Se il prezzo attuale non era ancora stato scaricato, lo allineiamo al nuovo PMC
         if (!oldCurrPrice) {
           portfolioData.assets[editingIndex].currPrice = buyPrice;
         }
       } else {
-        // Nuovo Inserimento: Prezzo attuale parte uguale al PMC
         portfolioData.assets.push({ 
           ticker, 
           name, 
