@@ -89,12 +89,12 @@
     <!-- LISTA TITOLI -->
     <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl shadow-sm overflow-hidden">
       
-      <!-- HEADING SCHEDA CON PULSANTI "AGGIORNA PREZZI" E "AGGIUNGI TITOLO" -->
+      <!-- HEADING SCHEDA CON PULSANTI -->
       <div class="px-4 py-3 border-b border-slate-700/60 flex justify-between items-center">
         <h2 class="font-medium text-slate-300 text-xs uppercase tracking-wider">Titoli & ETF</h2>
         
         <div class="flex items-center gap-2">
-          <!-- PULSANTE AGGIORNA PREZZI / SVEGLIA PROXY -->
+          <!-- PULSANTE AGGIORNA PREZZI -->
           <button 
             id="btn-refresh-prices"
             onclick="fetchPricesFromProxy()" 
@@ -191,7 +191,6 @@
 
   <!-- FIREBASE CONFIG & LOGICA INTEGRATA -->
   <script>
-    // Configurazione Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyC-WrC9fbfOrYWl3F3c9JGtMujBRs5-nEo",
       authDomain: "portafoglio-gemini.firebaseapp.com",
@@ -211,7 +210,6 @@
     let currentUser = null;
     let portfolioData = { cash: 0, assets: [] };
 
-    // Helper sicuri DOM
     function safeSetText(id, text) {
       const el = document.getElementById(id);
       if (el) el.innerText = text;
@@ -222,7 +220,6 @@
       if (el) el.className = className;
     }
 
-    // Normalizzatore universale per la struttura dei dati
     function normalizeData(raw) {
       if (!raw) return { assets: [], cash: 0 };
       
@@ -282,7 +279,6 @@
       }
     }
 
-    // Gestione stato Login Firebase
     auth.onAuthStateChanged((user) => {
       if (user) {
         currentUser = user;
@@ -358,7 +354,7 @@
       }
     }
 
-    // FUNZIONE DI CHIAMATA AL PROXY PER AGGIORNARE I PREZZI
+    // CHIAMATA LIVE AI PREZZI CON CORS PROXY AUTOMATICO E FALLBACK
     async function fetchPricesFromProxy() {
       if (portfolioData.assets.length === 0) {
         alert("Nessun titolo presente in portafoglio.");
@@ -371,21 +367,37 @@
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
       if (refreshLabel) refreshLabel.innerText = "Aggiornamento...";
 
-      try {
-        const tickers = portfolioData.assets.map(a => a.name).join(',');
-        
-        // Sostituisci l'URL qui sotto con quello della tua Cloud Function / Proxy Vercel se diverso
-        const proxyUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(tickers)}`;
-        
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error("Risposta proxy non valida");
+      const tickers = portfolioData.assets.map(a => a.name.trim()).join(',');
+      const targetUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(tickers)}`;
 
-        const json = await response.json();
-        const results = json.quoteResponse?.result || [];
+      // Proxy CORS pubblici con fall-back automatico
+      const corsProxies = [
+        (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+      ];
 
+      let results = [];
+      let success = false;
+
+      for (const getProxyUrl of corsProxies) {
+        try {
+          const res = await fetch(getProxyUrl(targetUrl));
+          if (!res.ok) continue;
+          const json = await res.json();
+          results = json.quoteResponse?.result || [];
+          if (results.length > 0) {
+            success = true;
+            break;
+          }
+        } catch (e) {
+          console.warn("Mancata risposta dal proxy, provo il successivo...", e);
+        }
+      }
+
+      if (success && results.length > 0) {
         results.forEach(quote => {
           const assetIndex = portfolioData.assets.findIndex(
-            a => a.name.toUpperCase() === quote.symbol.toUpperCase()
+            a => a.name.trim().toUpperCase() === quote.symbol.trim().toUpperCase()
           );
           if (assetIndex !== -1) {
             if (quote.regularMarketPrice) {
@@ -399,13 +411,12 @@
 
         saveUserData();
         updateUI();
-      } catch (err) {
-        console.warn("Impossibile raggiungere il proxy Yahoo direttamente. Verificare l'URL proxy personalizzato.", err);
-        alert("Richiesta inviata al proxy. Se utilizzi una Cloud Function specifica, aggiorna l'URL nel codice alla riga proxyUrl.");
-      } finally {
-        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
-        if (refreshLabel) refreshLabel.innerText = "Aggiorna Prezzi";
+      } else {
+        alert("Non è stato possibile aggiornare i prezzi. Verifica i ticker inseriti (es. SWDA.MI, AAPL).");
       }
+
+      if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+      if (refreshLabel) refreshLabel.innerText = "Aggiorna Prezzi";
     }
 
     function updateUI() {
