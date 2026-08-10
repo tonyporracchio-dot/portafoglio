@@ -354,7 +354,7 @@
       }
     }
 
-    // CHIAMATA AL PROXY RENDER PER OGNI TITOLO IN PORTAFOGLIO
+    // CHIAMATA AL PROXY RENDER CON SUPPORTO CORS BYPASS
     async function fetchPricesFromProxy() {
       if (portfolioData.assets.length === 0) {
         alert("Nessun titolo presente in portafoglio.");
@@ -374,7 +374,9 @@
           const symbol = asset.name.trim();
           if (!symbol) return;
 
-          const url = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
+          // URL pulito del proxy fatto passare attraverso corsproxy.io per evitare il blocco del browser
+          const targetUrl = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
+          const url = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
           
           try {
             const res = await fetch(url);
@@ -403,7 +405,7 @@
         }
       } catch (err) {
         console.error("Errore durante la chiamata al proxy:", err);
-        alert("Errore di connessione al proxy Render.");
+        alert("Errore di connessione al proxy.");
       } finally {
         if (refreshIcon) refreshIcon.classList.remove('animate-spin');
         if (refreshLabel) refreshLabel.innerText = "Aggiorna Prezzi";
