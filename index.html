@@ -354,7 +354,7 @@
       }
     }
 
-    // CHIAMATA AL PROXY RENDER CON SUPPORTO CORS BYPASS
+    // CHIAMATA AL PROXY RENDER CON SUPPORTO CORS E GESTIONE ERRORI
     async function fetchPricesFromProxy() {
       if (portfolioData.assets.length === 0) {
         alert("Nessun titolo presente in portafoglio.");
@@ -374,24 +374,32 @@
           const symbol = asset.name.trim();
           if (!symbol) return;
 
-          // URL pulito del proxy fatto passare attraverso corsproxy.io per evitare il blocco del browser
           const targetUrl = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
           const url = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
           
-          try {
-            const res = await fetch(url);
-            if (!res.ok) return;
-            const quote = await res.json();
-
-            if (quote && typeof quote.price === 'number' && quote.price > 0) {
-              asset.currPrice = quote.price;
-              if (typeof quote.changePercent === 'number') {
-                asset.dailyChange = quote.changePercent;
+          let success = false;
+          // Effettua fino a 2 tentativi in caso di cold start del server Render
+          for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+              const res = await fetch(url);
+              if (res.ok) {
+                const quote = await res.json();
+                if (quote && typeof quote.price === 'number' && quote.price > 0) {
+                  asset.currPrice = quote.price;
+                  if (typeof quote.changePercent === 'number') {
+                    asset.dailyChange = quote.changePercent;
+                  }
+                  updatedCount++;
+                  success = true;
+                  break;
+                }
               }
-              updatedCount++;
+            } catch (e) {
+              // Riprova se fallisce al primo colpo
             }
-          } catch (e) {
-            console.warn(`Errore durante il recupero per ${symbol}:`, e);
+            if (!success && attempt === 1) {
+              await new Promise(r => setTimeout(r, 2000)); // Attende 2 secondi prima del secondo tentativo
+            }
           }
         });
 
@@ -401,7 +409,7 @@
           saveUserData();
           updateUI();
         } else {
-          alert("Impossibile recuperare i prezzi. Se il server Render era in sleep, attendi 10 secondi e riprova.");
+          alert("Impossibile recuperare i prezzi. Verifica che i ticker siano corretti (es. SWDA.MI, AAPL).");
         }
       } catch (err) {
         console.error("Errore durante la chiamata al proxy:", err);
