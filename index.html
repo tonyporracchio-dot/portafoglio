@@ -354,7 +354,7 @@
       }
     }
 
-    // CHIAMATA AL PROXY RENDER PASSANDO DAL PROXY CORS PUBBLICO
+    // CHIAMATA UNICA BATCH AL PROXY RENDER
     async function fetchPricesFromProxy() {
       if (portfolioData.assets.length === 0) {
         alert("Nessun titolo presente in portafoglio.");
@@ -367,50 +367,43 @@
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
       if (refreshLabel) refreshLabel.innerText = "Aggiornamento...";
 
-      let updatedCount = 0;
-
       try {
-        for (let asset of portfolioData.assets) {
-          const symbol = asset.name ? asset.name.trim() : '';
-          if (!symbol) continue;
+        // Raccoglie tutti i ticker in un'unica stringa separata da virgole
+        const tickers = portfolioData.assets.map(a => a.name.trim()).join(',');
+        const url = `https://proxy-stocks-prices.onrender.com/price?symbols=${encodeURIComponent(tickers)}`;
 
-          const targetUrl = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
-          const url = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
-          
-          let success = false;
-          for (let attempt = 1; attempt <= 2; attempt++) {
-            try {
-              const res = await fetch(url);
-              if (res.ok) {
-                const quote = await res.json();
-                if (quote && typeof quote.price === 'number' && quote.price > 0) {
-                  asset.currPrice = quote.price;
-                  if (typeof quote.changePercent === 'number') {
-                    asset.dailyChange = quote.changePercent;
-                  }
-                  updatedCount++;
-                  success = true;
-                  break;
-                }
-              }
-            } catch (err) {
-              console.warn(`Tentativo ${attempt} fallito per ${symbol}:`, err);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Errore HTTP ${res.status}`);
+
+        const data = await res.json();
+        const items = data.results || (Array.isArray(data) ? data : [data]);
+
+        let updatedCount = 0;
+
+        items.forEach(quote => {
+          const assetIndex = portfolioData.assets.findIndex(
+            a => a.name.trim().toUpperCase() === quote.symbol.toUpperCase()
+          );
+          if (assetIndex !== -1) {
+            if (typeof quote.price === 'number') {
+              portfolioData.assets[assetIndex].currPrice = quote.price;
             }
-            if (!success && attempt === 1) {
-              await new Promise(r => setTimeout(r, 1500));
+            if (typeof quote.changePercent === 'number') {
+              portfolioData.assets[assetIndex].dailyChange = quote.changePercent;
             }
+            updatedCount++;
           }
-        }
+        });
 
         if (updatedCount > 0) {
           saveUserData();
           updateUI();
         } else {
-          alert("Impossibile recuperare i prezzi. Se il server Render era in sleep, attendi 10 secondi e riprova.");
+          alert("Nessun dato aggiornato. Verifica la correttezza dei ticker.");
         }
       } catch (err) {
-        console.error("Errore generale durante l'aggiornamento:", err);
-        alert("Errore di connessione al server proxy.");
+        console.error("Errore aggiornamento prezzi:", err);
+        alert("Impossibile aggiornare i prezzi. Se il server Render era in sleep, attendi 10 secondi e riprova.");
       } finally {
         if (refreshIcon) refreshIcon.classList.remove('animate-spin');
         if (refreshLabel) refreshLabel.innerText = "Aggiorna Prezzi";
