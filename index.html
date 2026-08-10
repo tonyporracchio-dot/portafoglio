@@ -119,23 +119,6 @@
             <button onclick="setWidgetTimeframe('cash', '5Y')" class="tf-btn-cash px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="5Y">5Y</button>
             <button onclick="setWidgetTimeframe('cash', 'MAX')" class="tf-btn-cash px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium text-emerald-400" data-tf="MAX">MAX</button>
           </div>
-
-          <!-- Sezione per l'inserimento manuale dei dati storici del Widget 2 -->
-<div class="storico-input-container" style="margin-top: 15px; padding: 10px; border-top: 1px solid #ccc;">
-  <h4 style="margin-bottom: 10px;">Aggiungi Dato Storico</h4>
-  
-  <div style="margin-bottom: 5px;">
-    <label for="mese-widget2">Mese:</label>
-    <input type="month" id="mese-widget2" required>
-  </div>
-  
-  <div style="margin-bottom: 10px;">
-    <label for="valore-widget2">Valore:</label>
-    <input type="number" id="valore-widget2" step="0.01" placeholder="Es. 1500.50" required>
-  </div>
-  
-  <button onclick="salvaStoricoWidget2()">Salva Dato</button>
-</div>
         </div>
         <!-- Grafico Sfondo -->
         <div class="h-28 w-full mt-3 z-0">
@@ -285,7 +268,7 @@
     let portfolioData = {
       cash: 0,
       assets: [],
-      history: [] // [{ date: 'YYYY-MM-DD', cash: 5000, stocks: 12000 }]
+      history: [] // [{ date: 'YYYY-MM', cash: 5000, stocks: 12000 }]
     };
 
     // Istanze dei Grafici Chart.js
@@ -306,6 +289,10 @@
     function safeSetClass(id, className) {
       const el = document.getElementById(id);
       if (el) el.className = className;
+    }
+
+    function formatEUR(value) {
+      return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
     }
 
     // Normalizzatore Dati
@@ -455,7 +442,6 @@
       safeSetText('w1-change', `Oggi: ${isDailyTotalPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${totalDailyPerc.toFixed(2)}%)`);
 
       // WIDGET 2: Liquidità
-      // Variazione mensile liquidità da storico (se disponibile)
       let monthlyCashChangeVal = 0;
       let monthlyCashChangePerc = 0;
       if (portfolioData.history && portfolioData.history.length >= 2) {
@@ -507,7 +493,6 @@
 
     function setWidgetTimeframe(type, tf) {
       timeframeState[type] = tf;
-      // Aggiorna stili pulsanti
       document.querySelectorAll(`.tf-btn-${type}`).forEach(btn => {
         if (btn.dataset.tf === tf) {
           btn.classList.add('text-blue-400', 'font-bold');
@@ -523,7 +508,6 @@
     function renderWidgetCharts(currentTotal, currentCash, currentStocks) {
       let historyData = [...(portfolioData.history || [])];
 
-      // Se non c'è storico, crea un punto fittizio con il valore attuale
       const todayStr = new Date().toISOString().slice(0, 7);
       if (historyData.length === 0) {
         historyData = [
@@ -596,7 +580,6 @@
       const tbody = document.getElementById('assets-table-body');
       if (!tbody) return;
 
-      // Distruggi vecchi sparklines
       sparklineInstances.forEach(inst => inst.destroy());
       sparklineInstances = [];
 
@@ -703,10 +686,11 @@
         document.getElementById('asset-qty').value = asset.qty || '';
         document.getElementById('asset-buy-price').value = asset.buyPrice || '';
         document.getElementById('asset-curr-price').value = asset.currPrice || '';
-        document.getElementById('asset-daily-change').value = asset.dailyChange || 0;
+        document.getElementById('asset-daily-change').value = asset.dailyChange || '';
       } else {
         document.getElementById('modal-title').innerText = "Aggiungi Titolo";
         form.reset();
+        document.getElementById('asset-edit-index').value = -1;
       }
 
       modal.classList.remove('hidden');
@@ -716,32 +700,31 @@
       document.getElementById('modal-add')?.classList.add('hidden');
     }
 
-    function saveAsset(e) {
-      e.preventDefault();
-      const editIndex = parseInt(document.getElementById('asset-edit-index').value);
-      const name = document.getElementById('asset-name').value.trim();
-      const qty = parseFloat(document.getElementById('asset-qty').value);
-      const buyPrice = parseFloat(document.getElementById('asset-buy-price').value);
-      const currPrice = parseFloat(document.getElementById('asset-curr-price').value);
-      const dailyChange = parseFloat(document.getElementById('asset-daily-change').value) || 0;
+    function saveAsset(event) {
+      event.preventDefault();
+      const index = parseInt(document.getElementById('asset-edit-index').value);
 
-      if (!name || isNaN(qty) || isNaN(buyPrice) || isNaN(currPrice)) return;
+      const newAsset = {
+        name: document.getElementById('asset-name').value.trim(),
+        qty: parseFloat(document.getElementById('asset-qty').value) || 0,
+        buyPrice: parseFloat(document.getElementById('asset-buy-price').value) || 0,
+        currPrice: parseFloat(document.getElementById('asset-curr-price').value) || 0,
+        dailyChange: parseFloat(document.getElementById('asset-daily-change').value) || 0
+      };
 
-      const newAsset = { name, qty, buyPrice, currPrice, dailyChange };
-
-      if (editIndex >= 0) {
-        portfolioData.assets[editIndex] = newAsset;
+      if (index >= 0) {
+        portfolioData.assets[index] = newAsset;
       } else {
         portfolioData.assets.push(newAsset);
       }
 
       saveUserData();
-      closeModal();
       updateUI();
+      closeModal();
     }
 
     function deleteAsset(index) {
-      if (confirm("Sei sicuro di voler eliminare questo titolo dal portafoglio?")) {
+      if (confirm(`Sei sicuro di voler eliminare "${portfolioData.assets[index]?.name}"?`)) {
         portfolioData.assets.splice(index, 1);
         saveUserData();
         updateUI();
@@ -749,76 +732,67 @@
     }
 
     function editCash() {
-      const currentCash = typeof portfolioData.cash === 'number' ? portfolioData.cash : 0;
-      const newCash = prompt("Inserisci la nuova liquidità disponibile (€):", currentCash);
-      if (newCash !== null) {
-        const val = parseFloat(newCash);
+      const current = portfolioData.cash || 0;
+      const input = prompt("Inserisci il valore aggiornato della liquidità (€):", current);
+      if (input !== null) {
+        const val = parseFloat(input.replace(',', '.'));
         if (!isNaN(val)) {
           portfolioData.cash = val;
           saveUserData();
           updateUI();
+        } else {
+          alert("Inserisci un numero valido.");
         }
       }
     }
 
-    // MODELLO & IMPORTAZIONE CSV UNICO
+    // GESTIONE CSV STORICO
     function downloadCSVTemplate() {
-      const csvContent = "Data;Liquidita;ValoreTitoli\n2025-12;5000;10000\n2026-01;5200;11500\n2026-02;5500;12000";
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
+      const csvContent = "data:text/csv;charset=utf-8,Data,Liquidita,Titoli\n2025-10,5000,10000\n2025-11,5200,10500\n2025-12,5100,11000\n2026-01,5500,11500";
+      const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
-      link.setAttribute("href", url);
+      link.setAttribute("href", encodedUri);
       link.setAttribute("download", "modello_storico_patrimonio.csv");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
-    function uploadCSVHistory(e) {
-      const file = e.target.files[0];
+    function uploadCSVHistory(event) {
+      const file = event.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function(evt) {
-        const text = evt.target.result;
+      reader.onload = function(e) {
+        const text = e.target.result;
         const lines = text.split('\n');
-        let parsedHistory = [];
+        const newHistory = [];
 
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
-          
-          const cols = line.split(';');
+          const cols = line.split(/[,;]/);
           if (cols.length >= 3) {
             const date = cols[0].trim();
-            const cash = parseFloat(cols[1].trim().replace(',', '.'));
-            const stocks = parseFloat(cols[2].trim().replace(',', '.'));
-
-            if (date && !isNaN(cash) && !isNaN(stocks)) {
-              parsedHistory.push({ date, cash, stocks });
+            const cash = parseFloat(cols[1].replace(',', '.').trim()) || 0;
+            const stocks = parseFloat(cols[2].replace(',', '.').trim()) || 0;
+            if (date) {
+              newHistory.push({ date, cash, stocks });
             }
           }
         }
 
-        if (parsedHistory.length > 0) {
-          portfolioData.history = parsedHistory;
+        if (newHistory.length > 0) {
+          portfolioData.history = newHistory;
           saveUserData();
           updateUI();
-          alert(`Caricamento completato! Importati ${parsedHistory.length} mesi di storico.`);
+          alert(`Caricati ${newHistory.length} record storici con successo!`);
         } else {
-          alert("Errore nel formato del file CSV. Assicurati di usare il separatore punto e virgola (;).");
+          alert("Nessun dato valido trovato nel CSV.");
         }
       };
       reader.readAsText(file);
     }
-
-    function formatEUR(val) {
-      return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val || 0);
-    }
-
-    // Inizializzazione Locale Immediata
-    portfolioData = loadFromLocalStorage();
-    updateUI();
   </script>
 </body>
 </html>
