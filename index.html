@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <!-- BLOCCO ZOOM MOBILE -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mio Patrimonio</title>
+  <title>Mio Portafoglio</title>
 
   <!-- PWA & Mobile Settings -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Patrimonio">
+  <meta name="apple-mobile-web-app-title" content="Portafoglio">
   <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/512/chart-increasing-emoji.png">
 
   <!-- Tailwind CSS CDN -->
@@ -28,9 +28,9 @@
   <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-2.5 backdrop-blur-md">
     <div class="max-w-4xl mx-auto flex justify-between items-center">
       
-      <!-- Titolo App -->
+      <!-- Titolo App Cambiato in "Portafoglio" -->
       <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-        Patrimonio
+        Portafoglio
       </span>
 
       <!-- Profilo / Login -->
@@ -84,9 +84,9 @@
         <div id="cash-change-val" class="text-xs font-semibold mt-1 text-slate-400">Mese: € 0,00 (0.00%)</div>
       </div>
 
-      <!-- 3. VALORE TITOLI -->
+      <!-- 3. TITOLI (NOME CAMBIATO DA "VALORE TITOLI") -->
       <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
-        <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Valore Titoli</span>
+        <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Titoli</span>
         <div id="invested-val" class="text-2xl font-bold text-blue-400 mt-1">€ 0,00</div>
         <div id="invested-daily-val" class="text-xs font-semibold mt-1 text-slate-400">Oggi: € 0,00 (0.00%)</div>
         <div id="gain-loss-val" class="text-xs font-semibold mt-0.5 text-slate-400">Totale: € 0,00 (0.00%)</div>
@@ -94,7 +94,7 @@
 
     </div>
 
-    <!-- LISTA TITOLI IN PORTAFOGLIO (LAYOUT A 2 RIGHE SENZA SCROLL) -->
+    <!-- LISTA TITOLI IN PORTAFOGLIO -->
     <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl shadow-sm overflow-hidden">
       
       <!-- HEADING SCHEDA CON PULSANTI -->
@@ -126,7 +126,7 @@
         </div>
       </div>
 
-      <!-- CONTENITORE TITOLI A 2 RIGHE -->
+      <!-- CONTENITORE TITOLI -->
       <div id="assets-list-body" class="divide-y divide-slate-700/50">
         <div class="py-8 text-center text-slate-500 text-xs">
           Caricamento dati in corso...
@@ -134,11 +134,11 @@
       </div>
     </div>
 
-    <!-- SEZIONE WATCHLIST -->
+    <!-- SEZIONE WATCHLIST (TITOLO PULITO SENZA "DA OSSERVARE") -->
     <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl shadow-sm overflow-hidden mt-6">
       <div class="px-4 py-3 border-b border-slate-700/60 flex justify-between items-center">
         <div class="flex items-center gap-2">
-          <h2 class="font-medium text-slate-300 text-xs uppercase tracking-wider">Watchlist (Da Osservare)</h2>
+          <h2 class="font-medium text-slate-300 text-xs uppercase tracking-wider">Watchlist</h2>
           <span class="text-[10px] bg-slate-700/80 text-slate-400 px-2 py-0.5 rounded-full">No Portafoglio</span>
         </div>
         
@@ -186,8 +186,8 @@
             <input type="number" step="any" id="asset-qty" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Prezzo Med. (€)</label>
-            <input type="number" step="any" id="asset-buy-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs text-slate-400 mb-1">Prezzo Med. (€ - fino a 3 decimali)</label>
+            <input type="number" step="0.001" id="asset-buy-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
           </div>
         </div>
 
@@ -277,6 +277,16 @@
     function safeSetClass(id, className) {
       const el = document.getElementById(id);
       if (el) el.className = className;
+    }
+
+    // FORMATTAZIONE VALUTA CON SUPPORTO PER DECIMALI (SOPRATTUTTO PER PREZZO MEDIO A 3 DECIMALI)
+    function formatEUR(val, maxDigits = 2) {
+      return new Intl.NumberFormat('it-IT', { 
+        style: 'currency', 
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: maxDigits 
+      }).format(val || 0);
     }
 
     function normalizeData(raw) {
@@ -439,7 +449,6 @@
       }
     }
 
-    // CHIAMATA API A RENDER TRAMITE TICKER
     async function fetchPricesFromProxy() {
       const allAssets = portfolioData.assets || [];
       const allWatchlist = portfolioData.watchlist || [];
@@ -569,7 +578,7 @@
       safeSetClass('cash-change-val', `text-xs font-semibold mt-1 ${isCashPos ? 'text-emerald-400' : 'text-rose-400'}`);
       safeSetText('cash-change-val', `Mese: ${isCashPos ? '+' : ''}${formatEUR(cashDiff)} (${isCashPos ? '+' : ''}${cashDiffPerc.toFixed(2)}%)`);
 
-      // 3. Valore Titoli
+      // 3. Titoli
       safeSetText('invested-val', formatEUR(totalInvestedVal));
       
       const prevInvestedVal = totalInvestedVal - totalDailyGainLoss;
@@ -585,7 +594,7 @@
       renderWatchlistList();
     }
 
-    // RENDERING TITOLI SU 2 RIGHE SENZA SCROLLING
+    // RENDERING TITOLI CON NOME SU RIGA DEDICATA + VARIAZIONE IN € + PMC FINO A 3 DECIMALI
     function renderList() {
       const container = document.getElementById('assets-list-body');
       if (!container) return;
@@ -609,26 +618,33 @@
         const isPos = profit >= 0;
 
         const dailyPerc = item.dailyChange || 0;
-        const isDailyPos = dailyPerc >= 0;
+        const previousVal = dailyPerc !== 0 ? val / (1 + (dailyPerc / 100)) : val;
+        const dailyEuro = val - previousVal;
+        const isDailyPos = dailyEuro >= 0;
 
         return `
           <div class="p-3.5 hover:bg-slate-800/40 transition-colors space-y-2">
-            <!-- RIGA 1: NOME, TICKER, VALORE, RENDIMENTO TOTALE E AZIONI -->
-            <div class="flex justify-between items-start gap-2">
-              <div class="min-w-0 flex-1">
-                <div class="font-semibold text-white text-sm leading-tight truncate">${name}</div>
-                <div class="text-[11px] text-slate-400 font-mono mt-0.5">${ticker}</div>
+            <!-- RIGA 1: NOME TITOLO A TUTTA LARGHEZZA -->
+            <div class="w-full border-b border-slate-700/30 pb-1">
+              <div class="font-semibold text-white text-sm leading-snug break-words">${name}</div>
+              <div class="text-[11px] text-slate-400 font-mono mt-0.5">${ticker}</div>
+            </div>
+
+            <!-- RIGA 2: VALORE, RENDIMENTO E AZIONI -->
+            <div class="flex justify-between items-center gap-2">
+              <div>
+                <span class="text-slate-400 text-xs">Valore Attuale:</span>
+                <span class="font-bold text-white text-sm ml-1">${formatEUR(val)}</span>
               </div>
 
-              <div class="text-right flex items-start gap-2.5">
-                <div>
-                  <div class="font-bold text-white text-sm leading-tight">${formatEUR(val)}</div>
-                  <div class="text-[11px] font-medium mt-0.5 ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
+              <div class="flex items-center gap-2">
+                <div class="text-right">
+                  <div class="text-[11px] font-semibold ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
                     Tot: ${isPos ? '+' : ''}${formatEUR(profit)} (${profitPerc.toFixed(2)}%)
                   </div>
                 </div>
 
-                <div class="flex items-center gap-0.5">
+                <div class="flex items-center gap-0.5 ml-1">
                   <button onclick="editAsset(${index})" class="text-slate-400 hover:text-blue-400 p-1 transition-colors" title="Modifica">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
@@ -643,7 +659,7 @@
               </div>
             </div>
 
-            <!-- RIGA 2: QTA, P.MEDIO, P.ATTUALE, VARIAZIONE OGGI -->
+            <!-- RIGA 3: QTA, P.MEDIO (FINO A 3 DECIMALI), P.ATTUALE, VARIAZIONE OGGI (€ E %) -->
             <div class="grid grid-cols-4 gap-1 text-[11px] pt-1.5 border-t border-slate-700/40 text-slate-300">
               <div>
                 <span class="text-slate-500 block text-[10px] uppercase">Q.tà</span>
@@ -651,7 +667,7 @@
               </div>
               <div>
                 <span class="text-slate-500 block text-[10px] uppercase">P. Medio</span>
-                <span class="font-medium">${formatEUR(buyPrice)}</span>
+                <span class="font-medium">${formatEUR(buyPrice, 3)}</span>
               </div>
               <div>
                 <span class="text-slate-500 block text-[10px] uppercase">P. Attuale</span>
@@ -660,7 +676,7 @@
               <div class="text-right">
                 <span class="text-slate-500 block text-[10px] uppercase">Var. Oggi</span>
                 <span class="font-semibold ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
-                  ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
+                  ${isDailyPos ? '+' : ''}${formatEUR(dailyEuro)} (${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%)
                 </span>
               </div>
             </div>
@@ -669,7 +685,7 @@
       }).join('');
     }
 
-    // RENDERING WATCHLIST SU 2 RIGHE
+    // RENDERING WATCHLIST CON NOME A TUTTA LARGHEZZA + VARIAZIONE IN €
     function renderWatchlistList() {
       const container = document.getElementById('watchlist-list-body');
       if (!container) return;
@@ -686,34 +702,45 @@
         const ticker = (item.ticker || item.name || '').toUpperCase();
         const currPrice = item.currPrice || 0;
         const dailyPerc = item.dailyChange || 0;
-        const isDailyPos = dailyPerc >= 0;
+        
+        const previousVal = dailyPerc !== 0 ? currPrice / (1 + (dailyPerc / 100)) : currPrice;
+        const dailyEuro = currPrice - previousVal;
+        const isDailyPos = dailyEuro >= 0;
 
         return `
-          <div class="p-3 hover:bg-slate-800/40 transition-colors flex justify-between items-center gap-2">
-            <div class="min-w-0 flex-1">
-              <div class="font-semibold text-white text-xs truncate">${name}</div>
+          <div class="p-3.5 hover:bg-slate-800/40 transition-colors space-y-2">
+            <!-- RIGA 1: NOME TITOLO A TUTTA LARGHEZZA -->
+            <div class="w-full border-b border-slate-700/30 pb-1">
+              <div class="font-semibold text-white text-xs break-words">${name}</div>
               <div class="text-[10px] text-slate-400 font-mono mt-0.5">${ticker}</div>
             </div>
 
-            <div class="flex items-center gap-3">
-              <div class="text-right">
-                <div class="font-medium text-white text-xs">${formatEUR(currPrice)}</div>
-                <div class="text-[11px] font-semibold ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
-                  ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
-                </div>
+            <!-- RIGA 2: PREZZO, VARIAZIONE (€ E %) E AZIONI -->
+            <div class="flex justify-between items-center gap-2">
+              <div>
+                <span class="text-slate-400 text-xs">Prezzo:</span>
+                <span class="font-medium text-white text-xs ml-1">${formatEUR(currPrice)}</span>
               </div>
 
-              <div class="flex items-center gap-0.5">
-                <button onclick="editWatchlistAsset(${index})" class="text-slate-400 hover:text-blue-400 p-1 transition-colors" title="Modifica">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
-                <button onclick="deleteWatchlistAsset(${index})" class="text-slate-500 hover:text-rose-400 p-1 transition-colors" title="Elimina">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+              <div class="flex items-center gap-2">
+                <div class="text-right">
+                  <div class="text-[11px] font-semibold ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
+                    Var: ${isDailyPos ? '+' : ''}${formatEUR(dailyEuro)} (${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%)
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-0.5 ml-1">
+                  <button onclick="editWatchlistAsset(${index})" class="text-slate-400 hover:text-blue-400 p-1 transition-colors" title="Modifica">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button onclick="deleteWatchlistAsset(${index})" class="text-slate-500 hover:text-rose-400 p-1 transition-colors" title="Elimina">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -799,7 +826,7 @@
       const newQtyStr = prompt(`QUANTITÀ (quote):`, asset.qty || 0);
       if (newQtyStr === null) return;
 
-      const newBuyPriceStr = prompt(`PREZZO MEDIO d'acquisto (€):`, asset.buyPrice || 0);
+      const newBuyPriceStr = prompt(`PREZZO MEDIO d'acquisto (€ - supportati 3 decimali):`, asset.buyPrice || 0);
       if (newBuyPriceStr === null) return;
       
       const newCurrPriceStr = prompt(`PREZZO ATTUALE (€):`, asset.currPrice || 0);
@@ -884,10 +911,6 @@
           updateUI();
         }
       }
-    }
-
-    function formatEUR(val) {
-      return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val || 0);
     }
 
     // Avvio iniziale
