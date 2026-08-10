@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grafico da CSV Google Sheets</title>
+  <title>Widget Grafico CSV Dinamico</title>
   <!-- Chart.js da CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -11,8 +11,12 @@
       --bg-color: #0f172a;
       --card-bg: #1e293b;
       --text-color: #f8fafc;
-      --accent-color: #38bdf8;
+      --text-sub: #94a3b8;
       --border-color: #334155;
+      --accent-color: #0ea5e9;
+      --accent-hover: #0284c7;
+      --color-ds1: #38bdf8; /* Prima serie */
+      --color-ds2: #a855f7; /* Seconda serie */
     }
 
     * {
@@ -34,31 +38,80 @@
 
     .container {
       width: 100%;
-      max-width: 900px;
+      max-width: 960px;
       background-color: var(--card-bg);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
       border: 1px solid var(--border-color);
     }
 
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-color);
     }
 
     h1 {
-      font-size: 1.25rem;
+      font-size: 1.35rem;
       font-weight: 600;
+      margin-bottom: 6px;
     }
 
-    .status {
+    p.subtitle {
       font-size: 0.875rem;
-      color: #94a3b8;
+      color: var(--text-sub);
+    }
+
+    /* Barra Configurazione URL */
+    .url-config {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    .url-config input {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .url-config input:focus {
+      border-color: var(--accent-color);
+    }
+
+    .url-config button {
+      background: var(--accent-color);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .url-config button:hover {
+      background: var(--accent-hover);
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      color: var(--text-sub);
     }
 
     .chart-box {
@@ -71,10 +124,11 @@
       display: none;
       color: #f87171;
       background-color: rgba(239, 68, 68, 0.1);
-      padding: 12px;
-      border-radius: 6px;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      padding: 12px 16px;
+      border-radius: 8px;
       margin-bottom: 16px;
-      font-size: 0.9rem;
+      font-size: 0.875rem;
     }
   </style>
 </head>
@@ -82,9 +136,24 @@
 
   <div class="container">
     <header>
-      <h1>Andamento Dati CSV</h1>
-      <span id="status" class="status">Caricamento in corso...</span>
+      <h1>Visualizzatore Dati CSV</h1>
+      <p class="subtitle">Inserisci il link di esportazione CSV del tuo Google Sheet</p>
     </header>
+
+    <!-- Controllo URL CSV -->
+    <div class="url-config">
+      <input 
+        type="text" 
+        id="csvUrlInput" 
+        placeholder="Incolla URL CSV qui..."
+        value="https://docs.google.com/spreadsheets/d/e/2PACX-1vTSh-PJ8uff324g2SKnIxq4UnXCWVJjl-wer-CDciNP3xXHTFCdX_FIumP5NA2I8XpWqRXL2gHoMKTq/pub?gid=2116695106&single=true&output=csv"
+      />
+      <button id="loadBtn">Carica Grafico</button>
+    </div>
+
+    <div class="status-bar">
+      <span id="status">In attesa...</span>
+    </div>
 
     <div id="error-msg"></div>
 
@@ -94,110 +163,191 @@
   </div>
 
   <script>
-    // URL CSV generato da Google Sheets
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSh-PJ8uff324g2SKnIxq4UnXCWVJjl-wer-CDciNP3xXHTFCdX_FIumP5NA2I8XpWqRXL2gHoMKTq/pub?output=csv';
+    let chartInstance = null; // Mantiene il riferimento per distruggere il vecchio grafico al ricaricamento
 
-    async function initChart() {
+    // Recupera l'URL salvato in precedenza o usa quello predefinito
+    const defaultUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSh-PJ8uff324g2SKnIxq4UnXCWVJjl-wer-CDciNP3xXHTFCdX_FIumP5NA2I8XpWqRXL2gHoMKTq/pub?gid=2116695106&single=true&output=csv';
+    const savedUrl = localStorage.getItem('user_csv_url');
+    
+    const inputEl = document.getElementById('csvUrlInput');
+    if (savedUrl) {
+      inputEl.value = savedUrl;
+    } else {
+      inputEl.value = defaultUrl;
+    }
+
+    document.getElementById('loadBtn').addEventListener('click', () => {
+      const url = inputEl.value.trim();
+      if (url) {
+        localStorage.setItem('user_csv_url', url);
+        loadAndRenderChart(url);
+      }
+    });
+
+    async function loadAndRenderChart(url) {
       const statusEl = document.getElementById('status');
       const errorEl = document.getElementById('error-msg');
 
+      errorEl.style.display = 'none';
+      statusEl.innerText = 'Caricamento dati in corso...';
+      statusEl.style.color = '#94a3b8';
+
       try {
-        const response = await fetch(CSV_URL);
-        if (!response.ok) throw new Error(`Errore HTTP ${response.status}`);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Errore di connessione (${response.status})`);
 
         const csvText = await response.text();
-        const { labels, data } = parseCSV(csvText);
+        const parsedData = parseCSV(csvText);
 
-        if (labels.length === 0) {
-          throw new Error('Nessun dato valido trovato nel CSV.');
+        if (parsedData.labels.length === 0) {
+          throw new Error('Nessuna riga di dati valida trovata nel file CSV.');
         }
 
-        renderChart(labels, data);
-        statusEl.innerText = `Dati caricati (${labels.length} punti)`;
+        renderChart(parsedData);
+        statusEl.innerText = `Grafico aggiornato (${parsedData.labels.length} punti dati caricati)`;
         statusEl.style.color = '#34d399';
       } catch (err) {
         console.error(err);
-        statusEl.innerText = 'Errore di caricamento';
+        statusEl.innerText = 'Errore nel caricamento';
         statusEl.style.color = '#f87171';
-        errorEl.innerText = 'Impossibile caricare il grafico: ' + err.message;
+        errorEl.innerText = 'Impossibile elaborare il grafico: ' + err.message;
         errorEl.style.display = 'block';
       }
     }
 
+    function cleanNumber(str) {
+      if (!str) return null;
+      let clean = str.replace(/"/g, '').replace(/€/g, '').replace(/\s/g, '').trim();
+      if (clean.includes(',') && clean.includes('.')) {
+        clean = clean.replace(/\./g, '').replace(',', '.');
+      } else if (clean.includes(',')) {
+        clean = clean.replace(',', '.');
+      }
+      const num = parseFloat(clean);
+      return isNaN(num) ? null : num;
+    }
+
     function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
-      const labels = [];
-      const data = [];
+      if (lines.length === 0) return { labels: [], datasets: [] };
 
-      // Salta la prima riga (intestazione)
+      // Intestazioni (Riga 0)
+      const headerCols = lines[0].split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)|;/);
+      const labelName = headerCols[0] ? headerCols[0].replace(/"/g, '').trim() : 'Mese';
+      const ds1Name = headerCols[1] ? headerCols[1].replace(/"/g, '').trim() : 'Serie 1';
+      const ds2Name = headerCols[2] ? headerCols[2].replace(/"/g, '').trim() : 'Serie 2';
+
+      const labels = [];
+      const data1 = [];
+      const data2 = [];
+
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
 
-        // Gestisce la divisione per virgola o punto e virgola
         const cols = line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)|;/);
 
         if (cols.length >= 2) {
-          let label = cols[0].replace(/"/g, '').trim();
-          let valueStr = cols[1].replace(/"/g, '').trim();
+          const lbl = cols[0].replace(/"/g, '').trim();
+          const val1 = cleanNumber(cols[1]);
+          const val2 = cols.length >= 3 ? cleanNumber(cols[2]) : null;
 
-          // Sostituisce la virgola decimale con il punto
-          valueStr = valueStr.replace(',', '.');
-
-          const val = parseFloat(valueStr);
-          if (!isNaN(val)) {
-            labels.push(label);
-            data.push(val);
+          if (lbl && (val1 !== null || val2 !== null)) {
+            labels.push(lbl);
+            data1.push(val1);
+            data2.push(val2);
           }
         }
       }
 
-      return { labels, data };
+      const datasets = [
+        {
+          label: ds1Name,
+          data: data1,
+          borderColor: '#38bdf8',
+          backgroundColor: 'rgba(56, 189, 248, 0.1)',
+          borderWidth: 2.5,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#38bdf8'
+        }
+      ];
+
+      // Se esiste la colonna C, aggiunge il secondo dataset
+      if (data2.some(v => v !== null)) {
+        datasets.push({
+          label: ds2Name,
+          data: data2,
+          borderColor: '#a855f7',
+          backgroundColor: 'rgba(168, 85, 247, 0.1)',
+          borderWidth: 2.5,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#a855f7'
+        });
+      }
+
+      return { labels, datasets, labelName };
     }
 
-    function renderChart(labels, data) {
+    function renderChart(parsedData) {
       const ctx = document.getElementById('myChart').getContext('2d');
 
-      // Gradiente per lo sfondo sotto la linea
-      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-      gradient.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
-      gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+      // Distrugge il vecchio grafico se esiste prima di crearne uno nuovo
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
 
-      new Chart(ctx, {
+      chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: labels,
-          datasets: [{
-            label: 'Valore',
-            data: data,
-            borderColor: '#38bdf8',
-            backgroundColor: gradient,
-            borderWidth: 2,
-            fill: true,
-            tension: 0.25,
-            pointRadius: 3,
-            pointHoverRadius: 6,
-            pointBackgroundColor: '#38bdf8'
-          }]
+          labels: parsedData.labels,
+          datasets: parsedData.datasets
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
           plugins: {
             legend: {
-              display: false // Nascosta per un design più pulito
+              position: 'top',
+              labels: {
+                color: '#f8fafc',
+                font: { size: 13 },
+                usePointStyle: true,
+                padding: 20
+              }
             },
             tooltip: {
-              mode: 'index',
-              intersect: false
+              backgroundColor: '#1e293b',
+              titleColor: '#f8fafc',
+              bodyColor: '#cbd5e1',
+              borderColor: '#334155',
+              borderWidth: 1,
+              padding: 12
             }
           },
           scales: {
             x: {
+              title: {
+                display: true,
+                text: parsedData.labelName,
+                color: '#94a3b8'
+              },
               ticks: { color: '#94a3b8' },
               grid: { color: '#334155' }
             },
             y: {
+              title: {
+                display: true,
+                text: 'Valore',
+                color: '#94a3b8'
+              },
               ticks: { color: '#94a3b8' },
               grid: { color: '#334155' }
             }
@@ -206,7 +356,10 @@
       });
     }
 
-    document.addEventListener('DOMContentLoaded', initChart);
+    // Carica automaticamente all'avvio
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAndRenderChart(inputEl.value.trim());
+    });
   </script>
 </body>
 </html>
