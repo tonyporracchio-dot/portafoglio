@@ -3,496 +3,825 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portfolio & Liquidity Dashboard</title>
-  <!-- Chart.js CDN -->
+  <title>Mio Patrimonio</title>
+
+  <!-- PWA & Mobile Settings -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Patrimonio">
+  <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/512/chart-increasing-emoji.png">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js CDN per i grafici -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --card-border: #334155;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent-blue: #38bdf8;
-      --accent-purple: #a855f7;
-      --accent-green: #34d399;
-      --accent-red: #f87171;
-      --btn-bg: #0ea5e9;
-      --btn-hover: #0284c7;
-    }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Navbar */
-    nav {
-      background-color: var(--card-bg);
-      border-bottom: 1px solid var(--card-border);
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .brand {
-      font-size: 1.25rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--text-main);
-    }
-
-    .brand-icon {
-      width: 12px;
-      height: 12px;
-      background-color: var(--accent-blue);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--accent-blue);
-    }
-
-    .user-badge {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      background: rgba(255,255,255,0.05);
-      padding: 6px 12px;
-      border-radius: 20px;
-      border: 1px solid var(--card-border);
-    }
-
-    /* Layout Container */
-    main {
-      flex: 1;
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    /* Summary Grid Cards */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-    }
-
-    .kpi-card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .kpi-title {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .kpi-value {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--text-main);
-    }
-
-    .kpi-sub {
-      font-size: 0.8rem;
-      color: var(--accent-green);
-    }
-
-    /* Main Chart Card */
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 24px;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .card-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-
-    /* CSV URL Input Control */
-    .csv-control {
-      display: flex;
-      gap: 10px;
-      width: 100%;
-      margin-bottom: 16px;
-      background: rgba(15, 23, 42, 0.5);
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
-    }
-
-    .csv-control input {
-      flex: 1;
-      background: var(--bg-color);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      outline: none;
-    }
-
-    .csv-control input:focus {
-      border-color: var(--accent-blue);
-    }
-
-    .csv-control button {
-      background: var(--btn-bg);
-      color: #ffffff;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-
-    .csv-control button:hover {
-      background: var(--btn-hover);
-    }
-
-    .status-text {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      min-height: 20px;
-    }
-
-    .chart-container {
-      position: relative;
-      width: 100%;
-      height: 420px;
-    }
-
-    /* Footer */
-    footer {
-      text-align: center;
-      padding: 20px;
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      border-top: 1px solid var(--card-border);
-      margin-top: auto;
-    }
-  </style>
+  <!-- Firebase SDKs (Compat Version) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-16">
 
-  <!-- Navigation Bar -->
-  <nav>
-    <div class="brand">
-      <div class="brand-icon"></div>
-      <span>Portfolio & Liquidity Manager</span>
+  <!-- BARRA SUPERIORE ESSENZIALE -->
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-2.5 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+        Patrimonio Dashboard
+      </span>
+
+      <div id="auth-container">
+        <button 
+          id="btn-login" 
+          onclick="loginWithGoogle()" 
+          class="text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/60 py-1 px-2.5 rounded-md transition-all flex items-center gap-1.5">
+          <svg class="w-3 h-3" viewBox="0 0 24 24">
+            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
+            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
+            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+          </svg>
+          Accedi
+        </button>
+
+        <div id="user-profile" class="hidden flex items-center gap-2">
+          <img id="user-photo" class="w-6 h-6 rounded-full border border-slate-700" src="" alt="User">
+          <button onclick="logout()" class="text-[11px] text-slate-400 hover:text-slate-200 transition-colors">
+            Esci
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="user-badge">Web App Dashboard</div>
-  </nav>
+  </header>
 
-  <!-- Main Content -->
-  <main>
+  <!-- CONTENUTO PRINCIPALE -->
+  <main class="max-w-6xl mx-auto px-4 pt-6 space-y-6">
 
-    <!-- Top KPI Cards -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <span class="kpi-title">Stato Connessione CSV</span>
-        <span class="kpi-value" id="kpiStatus">In Attesa</span>
-        <span class="kpi-sub" id="kpiDetail">Premi "Carica" per sincronizzare</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-title">Ultima Rilevazione</span>
-        <span class="kpi-value" id="kpiLastLabel">--</span>
-        <span class="kpi-sub">Data / Mese più recente</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-title">Punti Dati Inseriti</span>
-        <span class="kpi-value" id="kpiDataPoints">0</span>
-        <span class="kpi-sub">Righe elaborate dal foglio</span>
+    <!-- BARRA STRUMENTI STORICO CSV -->
+    <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-3 flex flex-wrap gap-2 items-center justify-between text-xs">
+      <div class="text-slate-400 font-medium">Gestione Storico & Dati CSV</div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="downloadCSVTemplate()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-300 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+          📥 Scarica Modello CSV
+        </button>
+        <label class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1">
+          📤 Carica CSV Storico
+          <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="uploadCSVHistory(event)">
+        </label>
       </div>
     </div>
 
-    <!-- Chart Widget Card -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">Andamento Storico (Google Sheets CSV)</h2>
+    <!-- GRID WIDGET 1, 2, 3 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      
+      <!-- WIDGET 1: PORTAFOGLIO TOTALE -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 shadow-lg flex flex-col justify-between relative overflow-hidden group">
+        <div class="flex justify-between items-start z-10">
+          <div>
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Widget 1 - Portafoglio Totale</span>
+            <div id="w1-value" class="text-2xl font-bold text-white mt-1">€ 0,00</div>
+            <div id="w1-change" class="text-xs font-semibold mt-1 text-slate-400">Oggi: € 0,00 (0.00%)</div>
+          </div>
+          <!-- Intervalli -->
+          <div class="flex gap-1 text-[10px] bg-slate-900/80 p-1 rounded-md border border-slate-700/50">
+            <button onclick="setWidgetTimeframe('total', '1M')" class="tf-btn-total px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="1M">1M</button>
+            <button onclick="setWidgetTimeframe('total', '6M')" class="tf-btn-total px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="6M">6M</button>
+            <button onclick="setWidgetTimeframe('total', '1Y')" class="tf-btn-total px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="1Y">1Y</button>
+            <button onclick="setWidgetTimeframe('total', '5Y')" class="tf-btn-total px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="5Y">5Y</button>
+            <button onclick="setWidgetTimeframe('total', 'MAX')" class="tf-btn-total px-1.5 py-0.5 rounded hover:text-white text-blue-400 font-bold" data-tf="MAX">MAX</button>
+          </div>
+        </div>
+        <!-- Grafico Sfondo -->
+        <div class="h-28 w-full mt-3 z-0">
+          <canvas id="chart-total"></canvas>
+        </div>
       </div>
 
-      <!-- Control Bar for Google Sheets CSV -->
-      <div class="csv-control">
-        <input 
-          type="text" 
-          id="csvUrlInput" 
-          placeholder="Incolla l'URL del CSV di Google Sheets..." 
-          value="https://docs.google.com/spreadsheets/d/e/2PACX-1vTSh-PJ8uff324g2SKnIxq4UnXCWVJjl-wer-CDciNP3xXHTFCdX_FIumP5NA2I8XpWqRXL2gHoMKTq/pub?gid=2116695106&single=true&output=csv"
-        />
-        <button id="btnLoadCsv">Carica Dati</button>
+      <!-- WIDGET 2: LIQUIDITÀ -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 shadow-lg flex flex-col justify-between relative overflow-hidden group">
+        <div class="flex justify-between items-start z-10">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Widget 2 - Liquidità</span>
+              <button onclick="editCash()" class="text-[11px] text-blue-400 hover:underline">Modifica</button>
+            </div>
+            <div id="w2-value" class="text-2xl font-bold text-emerald-400 mt-1">€ 0,00</div>
+            <div id="w2-change" class="text-xs font-semibold mt-1 text-slate-400">Mese: € 0,00 (0.00%)</div>
+          </div>
+          <!-- Intervalli -->
+          <div class="flex gap-1 text-[10px] bg-slate-900/80 p-1 rounded-md border border-slate-700/50">
+            <button onclick="setWidgetTimeframe('cash', '1M')" class="tf-btn-cash px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="1M">1M</button>
+            <button onclick="setWidgetTimeframe('cash', '6M')" class="tf-btn-cash px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="6M">6M</button>
+            <button onclick="setWidgetTimeframe('cash', '1Y')" class="tf-btn-cash px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="1Y">1Y</button>
+            <button onclick="setWidgetTimeframe('cash', '5Y')" class="tf-btn-cash px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="5Y">5Y</button>
+            <button onclick="setWidgetTimeframe('cash', 'MAX')" class="tf-btn-cash px-1.5 py-0.5 rounded hover:text-white text-emerald-400 font-bold" data-tf="MAX">MAX</button>
+          </div>
+        </div>
+        <!-- Grafico Sfondo -->
+        <div class="h-28 w-full mt-3 z-0">
+          <canvas id="chart-cash"></canvas>
+        </div>
       </div>
 
-      <div id="statusMessage" class="status-text">Pronto per il caricamento...</div>
+      <!-- WIDGET 3: TITOLI -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 shadow-lg flex flex-col justify-between relative overflow-hidden group">
+        <div class="flex justify-between items-start z-10">
+          <div>
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Widget 3 - Totale Titoli</span>
+            <div id="w3-value" class="text-2xl font-bold text-blue-400 mt-1">€ 0,00</div>
+            <div id="w3-change" class="text-xs font-semibold mt-1 text-slate-400">Oggi: € 0,00 (0.00%)</div>
+          </div>
+          <!-- Intervalli -->
+          <div class="flex gap-1 text-[10px] bg-slate-900/80 p-1 rounded-md border border-slate-700/50">
+            <button onclick="setWidgetTimeframe('stocks', '1M')" class="tf-btn-stocks px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="1M">1M</button>
+            <button onclick="setWidgetTimeframe('stocks', '6M')" class="tf-btn-stocks px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="6M">6M</button>
+            <button onclick="setWidgetTimeframe('stocks', '1Y')" class="tf-btn-stocks px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="1Y">1Y</button>
+            <button onclick="setWidgetTimeframe('stocks', '5Y')" class="tf-btn-stocks px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="5Y">5Y</button>
+            <button onclick="setWidgetTimeframe('stocks', 'MAX')" class="tf-btn-stocks px-1.5 py-0.5 rounded hover:text-white text-blue-400 font-bold" data-tf="MAX">MAX</button>
+          </div>
+        </div>
+        <!-- Grafico Sfondo -->
+        <div class="h-28 w-full mt-3 z-0">
+          <canvas id="chart-stocks"></canvas>
+        </div>
+      </div>
 
-      <div class="chart-container">
-        <canvas id="mainChart"></canvas>
+    </div>
+
+    <!-- WIDGET 4: ELENCO TITOLI ANALITICO -->
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl shadow-lg overflow-hidden">
+      
+      <div class="px-5 py-4 border-b border-slate-700/60 flex justify-between items-center bg-slate-900/30">
+        <div>
+          <h2 class="font-semibold text-slate-200 text-sm uppercase tracking-wider">Widget 4 - Elenco Titoli Analitico</h2>
+          <p class="text-xs text-slate-400">Dettaglio posizioni, quotazioni e variazioni</p>
+        </div>
+        
+        <button 
+          onclick="openModal()" 
+          class="text-xs text-white bg-blue-600 hover:bg-blue-500 border border-blue-500 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 font-medium shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Aggiungi Titolo
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="bg-slate-900/60 text-[11px] uppercase text-slate-400 border-b border-slate-700/60">
+            <tr>
+              <th class="py-3 px-4">Titolo</th>
+              <th class="py-3 px-4 text-right">Quantità</th>
+              <th class="py-3 px-4 text-right">Prezzo Med.</th>
+              <th class="py-3 px-4 text-right">Prezzo Att.</th>
+              <th class="py-3 px-4 text-right">Valore Totale</th>
+              <th class="py-3 px-4 text-right">Var. Oggi</th>
+              <th class="py-3 px-4 text-center w-28">Trend</th>
+              <th class="py-3 px-4 text-center">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="assets-table-body" class="divide-y divide-slate-700/40">
+            <tr>
+              <td colspan="8" class="py-8 text-center text-slate-500 text-xs">
+                Caricamento dati in corso...
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
   </main>
 
-  <!-- Footer -->
-  <footer>
-    Portfolio & Liquidity Web App &bull; Sincronizzato con Google Sheets CSV
-  </footer>
+  <!-- MODALE PER AGGIUNGERE / MODIFICARE UN TITOLO -->
+  <div id="modal-add" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 id="modal-title" class="text-sm font-semibold text-white">Aggiungi Titolo</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
 
-  <!-- Application Logic -->
+      <form id="form-add-asset" onsubmit="saveAsset(event)" class="space-y-3">
+        <input type="hidden" id="asset-edit-index" value="-1">
+        
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Nome / Ticker (es. SWDA, AAPL)</label>
+          <input type="text" id="asset-name" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Quantità</label>
+            <input type="number" step="any" id="asset-qty" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Prezzo Med. PMC (€)</label>
+            <input type="number" step="any" id="asset-buy-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Prezzo Attuale (€)</label>
+            <input type="number" step="any" id="asset-curr-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Var. Giornaliera (%)</label>
+            <input type="number" step="any" id="asset-daily-change" placeholder="es. +1.25" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3">
+          <button type="button" onclick="closeModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 rounded-lg">Annulla</button>
+          <button type="submit" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-medium text-white rounded-lg">Salva Titolo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FIREBASE & APPLICAZIONE -->
   <script>
-    (function() {
-      let myChart = null;
+    // Configurazione Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-WrC9fbfOrYWl3F3c9JGtMujBRs5-nEo",
+      authDomain: "portafoglio-gemini.firebaseapp.com",
+      projectId: "portafoglio-gemini",
+      storageBucket: "portafoglio-gemini.firebasestorage.app",
+      messagingSenderId: "190042969168",
+      appId: "1:190042969168:web:e60fe9fe7ea4a44b1e2d55",
+      measurementId: "G-5PWT8M9RD1"
+    };
 
-      const DEFAULT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSh-PJ8uff324g2SKnIxq4UnXCWVJjl-wer-CDciNP3xXHTFCdX_FIumP5NA2I8XpWqRXL2gHoMKTq/pub?gid=2116695106&single=true&output=csv';
-      const inputUrl = document.getElementById('csvUrlInput');
-      const btnLoad = document.getElementById('btnLoadCsv');
-      const statusMsg = document.getElementById('statusMessage');
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-      // KPIs
-      const kpiStatus = document.getElementById('kpiStatus');
-      const kpiDetail = document.getElementById('kpiDetail');
-      const kpiLastLabel = document.getElementById('kpiLastLabel');
-      const kpiDataPoints = document.getElementById('kpiDataPoints');
+    let currentUser = null;
 
-      // Ripristina l'URL salvato o imposta quello predefinito
-      const savedUrl = localStorage.getItem('app_csv_url');
-      if (savedUrl) {
-        inputUrl.value = savedUrl;
+    // Struttura Dati
+    let portfolioData = {
+      cash: 0,
+      assets: [],
+      history: [] // [{ date: 'YYYY-MM', cash: 5000, stocks: 12000 }]
+    };
+
+    // Istanze dei Grafici Chart.js
+    let chartTotalInstance = null;
+    let chartCashInstance = null;
+    let chartStocksInstance = null;
+    let sparklineInstances = [];
+
+    // Intervalli Temporali Correnti
+    let timeframeState = { total: 'MAX', cash: 'MAX', stocks: 'MAX' };
+
+    // Helper Formatting & DOM
+    function formatEUR(val) {
+      return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val || 0);
+    }
+
+    function safeSetText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = text;
+    }
+
+    function safeSetClass(id, className) {
+      const el = document.getElementById(id);
+      if (el) el.className = className;
+    }
+
+    // Normalizzatore Dati
+    function normalizeData(raw) {
+      if (!raw) return { assets: [], cash: 0, history: [] };
+      
+      let assets = [];
+      let cash = 0;
+      let history = raw.history || [];
+
+      // Assets
+      const rawAssets = raw.assets || raw.portafoglio || [];
+      if (Array.isArray(rawAssets)) {
+        assets = rawAssets.map(item => ({
+          name: item.name || item.nome || item.ticker || 'Titolo',
+          qty: parseFloat(item.qty || item.quantita || 0),
+          buyPrice: parseFloat(item.buyPrice || item.pmc || item.prezzo || 0),
+          currPrice: parseFloat(item.currPrice || item.prezzo || item.pmc || 0),
+          dailyChange: parseFloat(item.dailyChange || 0)
+        }));
+      }
+
+      // Cash
+      if (typeof raw.cash === 'number') {
+        cash = raw.cash;
+      } else if (typeof raw.storicoLiquidita === 'number') {
+        cash = raw.storicoLiquidita;
+      }
+
+      return { assets, cash, history };
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const localNew = JSON.parse(localStorage.getItem('patrimonio_data_v2'));
+        if (localNew) return normalizeData(localNew);
+
+        const localOld = JSON.parse(localStorage.getItem('patrimonio_data_v1'));
+        if (localOld) return normalizeData(localOld);
+      } catch (e) {
+        console.error("Errore LocalStorage:", e);
+      }
+      return { assets: [], cash: 0, history: [] };
+    }
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('patrimonio_data_v2', JSON.stringify(portfolioData));
+      } catch (e) {
+        console.error("Errore salvataggio LocalStorage:", e);
+      }
+    }
+
+    // Firebase Auth Listener
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        currentUser = user;
+        document.getElementById('btn-login')?.classList.add('hidden');
+        document.getElementById('user-profile')?.classList.remove('hidden');
+        const userPhoto = document.getElementById('user-photo');
+        if (userPhoto) userPhoto.src = user.photoURL || '';
+        loadUserDataFromCloud();
       } else {
-        inputUrl.value = DEFAULT_URL;
+        currentUser = null;
+        document.getElementById('btn-login')?.classList.remove('hidden');
+        document.getElementById('user-profile')?.classList.add('hidden');
+        portfolioData = loadFromLocalStorage();
+        updateUI();
       }
+    });
 
-      // Listener sul pulsante
-      btnLoad.addEventListener('click', () => {
-        const url = inputUrl.value.trim();
-        if (url) {
-          localStorage.setItem('app_csv_url', url);
-          fetchAndRender(url);
-        }
-      });
+    function loginWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(err => alert("Errore accesso: " + err.message));
+    }
 
-      // Pulisce e converte le stringhe in numeri
-      function parseNumber(val) {
-        if (!val) return null;
-        let clean = val.replace(/"/g, '').replace(/€/g, '').replace(/\s/g, '').trim();
-        if (clean.includes(',') && clean.includes('.')) {
-          clean = clean.replace(/\./g, '').replace(',', '.');
-        } else if (clean.includes(',')) {
-          clean = clean.replace(',', '.');
-        }
-        const parsed = parseFloat(clean);
-        return isNaN(parsed) ? null : parsed;
-      }
+    function logout() {
+      auth.signOut();
+    }
 
-      // Funzione di caricamento ed elaborazione del CSV
-      async function fetchAndRender(url) {
-        statusMsg.style.color = '#94a3b8';
-        statusMsg.innerText = 'Caricamento dati dal foglio in corso...';
-        kpiStatus.innerText = 'Syncing...';
-        kpiStatus.style.color = '#38bdf8';
-
-        try {
-          const response = await fetch(url);
-          if (!response.ok) throw new Error(`Errore di rete (${response.status})`);
-
-          const rawCsvText = await response.text();
-          const lines = rawCsvText.trim().split(/\r?\n/);
-
-          if (lines.length < 2) {
-            throw new Error('Il CSV non contiene righe di dati sufficienti.');
-          }
-
-          // Riga 0 = Intestazioni colonne
-          const headers = lines[0].split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)|;/);
-          const xTitle = headers[0] ? headers[0].replace(/"/g, '').trim() : 'Mese';
-          const labelDs1 = headers[1] ? headers[1].replace(/"/g, '').trim() : 'Widget 2';
-          const labelDs2 = headers[2] ? headers[2].replace(/"/g, '').trim() : 'Widget 3';
-
-          const labels = [];
-          const dataset1 = [];
-          const dataset2 = [];
-
-          // Dati dalla riga 1 in poi
-          for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-
-            const cols = line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)|;/);
-            if (cols.length >= 2) {
-              const label = cols[0].replace(/"/g, '').trim();
-              const v1 = parseNumber(cols[1]);
-              const v2 = cols.length >= 3 ? parseNumber(cols[2]) : null;
-
-              if (label && (v1 !== null || v2 !== null)) {
-                labels.push(label);
-                dataset1.push(v1);
-                dataset2.push(v2);
-              }
+    function loadUserDataFromCloud() {
+      if (!currentUser) return;
+      db.collection('portafogli_utenti').doc(currentUser.uid).onSnapshot((doc) => {
+        if (doc.exists) {
+          const cloudData = doc.data();
+          const normalized = normalizeData(cloudData);
+          if (normalized.assets.length > 0 || normalized.cash > 0 || normalized.history.length > 0) {
+            portfolioData = normalized;
+          } else {
+            const localData = loadFromLocalStorage();
+            if (localData.assets.length > 0 || localData.cash > 0) {
+              portfolioData = localData;
+              saveUserData();
             }
           }
-
-          if (labels.length === 0) {
-            throw new Error('Nessun dato valido estratto dal file.');
-          }
-
-          // Aggiorna Grafico
-          renderChart(labels, xTitle, labelDs1, dataset1, labelDs2, dataset2);
-
-          // Aggiorna KPI
-          statusMsg.innerText = `Sincronizzazione completata con successo!`;
-          statusMsg.style.color = '#34d399';
-          kpiStatus.innerText = 'Attivo';
-          kpiStatus.style.color = '#34d399';
-          kpiDetail.innerText = 'Dati CSV sincronizzati';
-          kpiLastLabel.innerText = labels[labels.length - 1];
-          kpiDataPoints.innerText = labels.length;
-
-        } catch (err) {
-          console.error(err);
-          statusMsg.innerText = 'Impossibile caricare il CSV: ' + err.message;
-          statusMsg.style.color = '#f87171';
-          kpiStatus.innerText = 'Errore';
-          kpiStatus.style.color = '#f87171';
-          kpiDetail.innerText = 'Verifica l\'URL del foglio';
+        } else {
+          portfolioData = loadFromLocalStorage();
+          saveUserData();
         }
+        saveToLocalStorage();
+        updateUI();
+      }, err => {
+        console.error("Errore Firestore:", err);
+        portfolioData = loadFromLocalStorage();
+        updateUI();
+      });
+    }
+
+    function saveUserData() {
+      saveToLocalStorage();
+      if (currentUser) {
+        db.collection('portafogli_utenti').doc(currentUser.uid).set(portfolioData)
+          .catch(err => console.error("Errore salvataggio Cloud:", err));
+      }
+    }
+
+    // Aggiornamento Interfaccia Utente
+    function updateUI() {
+      let totalInvestedVal = 0;
+      let totalCostVal = 0;
+      let totalDailyGainLoss = 0;
+
+      portfolioData.assets.forEach(a => {
+        const qty = a.qty || 0;
+        const currPrice = a.currPrice || 0;
+        const buyPrice = a.buyPrice || 0;
+
+        const val = qty * currPrice;
+        totalInvestedVal += val;
+        totalCostVal += (qty * buyPrice);
+
+        const dailyPerc = a.dailyChange || 0;
+        const previousVal = dailyPerc !== 0 ? val / (1 + (dailyPerc / 100)) : val;
+        totalDailyGainLoss += (val - previousVal);
+      });
+
+      const totalCash = typeof portfolioData.cash === 'number' ? portfolioData.cash : 0;
+      const totalPortfolio = totalInvestedVal + totalCash;
+
+      // WIDGET 1: Portafoglio
+      const prevTotalPortfolio = totalPortfolio - totalDailyGainLoss;
+      const totalDailyPerc = prevTotalPortfolio > 0 ? (totalDailyGainLoss / prevTotalPortfolio) * 100 : 0;
+      const isDailyTotalPos = totalDailyGainLoss >= 0;
+
+      safeSetText('w1-value', formatEUR(totalPortfolio));
+      safeSetClass('w1-change', `text-xs font-semibold mt-1 ${isDailyTotalPos ? 'text-emerald-400' : 'text-rose-400'}`);
+      safeSetText('w1-change', `Oggi: ${isDailyTotalPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${totalDailyPerc.toFixed(2)}%)`);
+
+      // WIDGET 2: Liquidità
+      let monthlyCashChangeVal = 0;
+      let monthlyCashChangePerc = 0;
+      if (portfolioData.history && portfolioData.history.length >= 2) {
+        const sortedHist = [...portfolioData.history].sort((a,b) => a.date.localeCompare(b.date));
+        const currentM = sortedHist[sortedHist.length - 1].cash;
+        const prevM = sortedHist[sortedHist.length - 2].cash;
+        monthlyCashChangeVal = currentM - prevM;
+        monthlyCashChangePerc = prevM > 0 ? (monthlyCashChangeVal / prevM) * 100 : 0;
+      }
+      const isCashPos = monthlyCashChangeVal >= 0;
+
+      safeSetText('w2-value', formatEUR(totalCash));
+      safeSetClass('w2-change', `text-xs font-semibold mt-1 ${isCashPos ? 'text-emerald-400' : 'text-rose-400'}`);
+      safeSetText('w2-change', `Mese: ${isCashPos ? '+' : ''}${formatEUR(monthlyCashChangeVal)} (${monthlyCashChangePerc.toFixed(2)}%)`);
+
+      // WIDGET 3: Titoli
+      const prevStocksVal = totalInvestedVal - totalDailyGainLoss;
+      const stocksDailyPerc = prevStocksVal > 0 ? (totalDailyGainLoss / prevStocksVal) * 100 : 0;
+      const isStocksPos = totalDailyGainLoss >= 0;
+
+      safeSetText('w3-value', formatEUR(totalInvestedVal));
+      safeSetClass('w3-change', `text-xs font-semibold mt-1 ${isStocksPos ? 'text-emerald-400' : 'text-rose-400'}`);
+      safeSetText('w3-change', `Oggi: ${isStocksPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${stocksDailyPerc.toFixed(2)}%)`);
+
+      // Rende i grafici dei Widget 1, 2, 3
+      renderWidgetCharts(totalPortfolio, totalCash, totalInvestedVal);
+
+      // Rende la tabella Widget 4
+      renderTable();
+    }
+
+    // Gestione Grafici dei Widget 1, 2, 3
+    function filterHistoryByTimeframe(dataArray, timeframe) {
+      if (!dataArray || dataArray.length === 0) return [];
+      const sorted = [...dataArray].sort((a,b) => a.date.localeCompare(b.date));
+      if (timeframe === 'MAX') return sorted;
+
+      const now = new Date();
+      let limitDate = new Date();
+
+      if (timeframe === '1M') limitDate.setMonth(now.getMonth() - 1);
+      else if (timeframe === '6M') limitDate.setMonth(now.getMonth() - 6);
+      else if (timeframe === '1Y') limitDate.setFullYear(now.getFullYear() - 1);
+      else if (timeframe === '5Y') limitDate.setFullYear(now.getFullYear() - 5);
+
+      const limitStr = limitDate.toISOString().slice(0, 7);
+      return sorted.filter(item => item.date >= limitStr);
+    }
+
+    function setWidgetTimeframe(type, tf) {
+      timeframeState[type] = tf;
+      document.querySelectorAll(`.tf-btn-${type}`).forEach(btn => {
+        if (btn.dataset.tf === tf) {
+          btn.classList.add('text-blue-400', 'font-bold');
+          btn.classList.remove('text-slate-400');
+        } else {
+          btn.classList.remove('text-blue-400', 'font-bold');
+          btn.classList.add('text-slate-400');
+        }
+      });
+      updateUI();
+    }
+
+    function renderWidgetCharts(currentTotal, currentCash, currentStocks) {
+      let historyData = [...(portfolioData.history || [])];
+
+      const todayStr = new Date().toISOString().slice(0, 7);
+      if (historyData.length === 0) {
+        historyData = [
+          { date: '2026-01', cash: currentCash, stocks: currentStocks },
+          { date: todayStr, cash: currentCash, stocks: currentStocks }
+        ];
       }
 
-      // Disegna il grafico con Chart.js
-      function renderChart(labels, xTitle, label1, data1, label2, data2) {
-        const ctx = document.getElementById('mainChart').getContext('2d');
+      // 1. Chart Total Portfolio
+      const histTotal = filterHistoryByTimeframe(historyData, timeframeState.total);
+      const labelsTotal = histTotal.map(h => h.date);
+      const valuesTotal = histTotal.map(h => (h.cash || 0) + (h.stocks || 0));
 
-        if (myChart) {
-          myChart.destroy();
-        }
+      chartTotalInstance = createBgChart('chart-total', chartTotalInstance, labelsTotal, valuesTotal, '#3b82f6');
 
-        const datasets = [
-          {
-            label: label1,
-            data: data1,
-            borderColor: '#38bdf8',
-            backgroundColor: 'rgba(56, 189, 248, 0.1)',
-            borderWidth: 2.5,
-            tension: 0.3,
-            pointRadius: 4,
-            pointHoverRadius: 7,
-            pointBackgroundColor: '#38bdf8',
-            fill: true
+      // 2. Chart Cash
+      const histCash = filterHistoryByTimeframe(historyData, timeframeState.cash);
+      const labelsCash = histCash.map(h => h.date);
+      const valuesCash = histCash.map(h => h.cash || 0);
+
+      chartCashInstance = createBgChart('chart-cash', chartCashInstance, labelsCash, valuesCash, '#10b981');
+
+      // 3. Chart Stocks
+      const histStocks = filterHistoryByTimeframe(historyData, timeframeState.stocks);
+      const labelsStocks = histStocks.map(h => h.date);
+      const valuesStocks = histStocks.map(h => h.stocks || 0);
+
+      chartStocksInstance = createBgChart('chart-stocks', chartStocksInstance, labelsStocks, valuesStocks, '#60a5fa');
+    }
+
+    function createBgChart(canvasId, chartInstance, labels, data, color) {
+      const ctx = document.getElementById(canvasId)?.getContext('2d');
+      if (!ctx) return null;
+
+      if (chartInstance) chartInstance.destroy();
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 100);
+      gradient.addColorStop(0, color + '55');
+      gradient.addColorStop(1, color + '00');
+
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            borderColor: color,
+            borderWidth: 2,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+            pointHoverRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: true } },
+          scales: {
+            x: { display: false },
+            y: { display: false }
           }
-        ];
-
-        if (data2.some(val => val !== null)) {
-          datasets.push({
-            label: label2,
-            data: data2,
-            borderColor: '#a855f7',
-            backgroundColor: 'rgba(168, 85, 247, 0.1)',
-            borderWidth: 2.5,
-            tension: 0.3,
-            pointRadius: 4,
-            pointHoverRadius: 7,
-            pointBackgroundColor: '#a855f7',
-            fill: true
-          });
         }
+      });
+    }
 
-        myChart = new Chart(ctx, {
+    // WIDGET 4: Rendering Tabella Analitica Titoli
+    function renderTable() {
+      const tbody = document.getElementById('assets-table-body');
+      if (!tbody) return;
+
+      // Distruggi vecchi sparklines
+      sparklineInstances.forEach(inst => inst.destroy());
+      sparklineInstances = [];
+
+      if (portfolioData.assets.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Nessun titolo in portafoglio. Clicca su "+ Aggiungi Titolo".</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = portfolioData.assets.map((item, index) => {
+        const name = item.name || 'Titolo';
+        const qty = item.qty || 0;
+        const buyPrice = item.buyPrice || 0;
+        const currPrice = item.currPrice || buyPrice;
+
+        const val = qty * currPrice;
+        const cost = qty * buyPrice;
+        const profit = val - cost;
+        const profitPerc = cost > 0 ? (profit / cost) * 100 : 0;
+
+        const dailyPerc = item.dailyChange || 0;
+        const isDailyPos = dailyPerc >= 0;
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition-colors">
+            <td class="py-3 px-4 font-semibold text-white text-xs">${name}</td>
+            <td class="py-3 px-4 text-right text-xs text-slate-300">${qty}</td>
+            <td class="py-3 px-4 text-right text-xs text-slate-400">${formatEUR(buyPrice)}</td>
+            <td class="py-3 px-4 text-right text-xs text-slate-200 font-medium">${formatEUR(currPrice)}</td>
+            <td class="py-3 px-4 text-right font-bold text-white text-xs">${formatEUR(val)}</td>
+            
+            <td class="py-3 px-4 text-right font-semibold text-xs ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
+              ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
+            </td>
+
+            <td class="py-3 px-4 text-center">
+              <div class="h-6 w-20 mx-auto">
+                <canvas id="sparkline-${index}"></canvas>
+              </div>
+            </td>
+
+            <td class="py-3 px-4 text-center">
+              <div class="flex justify-center items-center gap-1">
+                <button onclick="openModal(${index})" class="text-slate-400 hover:text-blue-400 p-1 transition-colors" title="Modifica">
+                  ✏️
+                </button>
+                <button onclick="deleteAsset(${index})" class="text-slate-500 hover:text-rose-400 p-1 transition-colors" title="Elimina">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Genera Mini Sparkline per ogni riga
+      portfolioData.assets.forEach((item, index) => {
+        const canvas = document.getElementById(`sparkline-${index}`);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const buyPrice = item.buyPrice || 1;
+        const currPrice = item.currPrice || buyPrice;
+        const dailyPerc = item.dailyChange || 0;
+        const prevPrice = dailyPerc !== 0 ? currPrice / (1 + (dailyPerc / 100)) : currPrice;
+
+        const trendData = [buyPrice, prevPrice, currPrice];
+        const isPositive = currPrice >= buyPrice;
+        const strokeColor = isPositive ? '#10b981' : '#f43f5e';
+
+        const chart = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: labels,
-            datasets: datasets
+            labels: ['PMC', 'Ieri', 'Oggi'],
+            datasets: [{
+              data: trendData,
+              borderColor: strokeColor,
+              borderWidth: 1.5,
+              tension: 0.3,
+              pointRadius: 0,
+              fill: false
+            }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-              mode: 'index',
-              intersect: false
-            },
-            plugins: {
-              legend: {
-                position: 'top',
-                labels: {
-                  color: '#f8fafc',
-                  font: { size: 13, weight: '600' },
-                  usePointStyle: true,
-                  padding: 20
-                }
-              },
-              tooltip: {
-                backgroundColor: '#1e293b',
-                titleColor: '#f8fafc',
-                bodyColor: '#cbd5e1',
-                borderColor: '#334155',
-                borderWidth: 1,
-                padding: 12
-              }
-            },
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
             scales: {
-              x: {
-                title: {
-                  display: true,
-                  text: xTitle,
-                  color: '#94a3b8'
-                },
-                ticks: { color: '#94a3b8' },
-                grid: { color: '#334155' }
-              },
-              y: {
-                title: {
-                  display: true,
-                  text: 'Valore',
-                  color: '#94a3b8'
-                },
-                ticks: { color: '#94a3b8' },
-                grid: { color: '#334155' }
-              }
+              x: { display: false },
+              y: { display: false }
             }
           }
         });
+        sparklineInstances.push(chart);
+      });
+    }
+
+    // Gestione Modale Titoli
+    function openModal(index = -1) {
+      const modal = document.getElementById('modal-add');
+      const title = document.getElementById('modal-title');
+      const editIndex = document.getElementById('asset-edit-index');
+
+      if (!modal) return;
+
+      if (index >= 0 && portfolioData.assets[index]) {
+        const asset = portfolioData.assets[index];
+        title.innerText = 'Modifica Titolo';
+        editIndex.value = index;
+        document.getElementById('asset-name').value = asset.name || '';
+        document.getElementById('asset-qty').value = asset.qty || '';
+        document.getElementById('asset-buy-price').value = asset.buyPrice || '';
+        document.getElementById('asset-curr-price').value = asset.currPrice || '';
+        document.getElementById('asset-daily-change').value = asset.dailyChange || '';
+      } else {
+        title.innerText = 'Aggiungi Titolo';
+        editIndex.value = -1;
+        document.getElementById('form-add-asset').reset();
       }
 
-      // Inizializzazione automatica all'avvio della pagina
-      document.addEventListener('DOMContentLoaded', () => {
-        if (inputUrl.value.trim()) {
-          fetchAndRender(inputUrl.value.trim());
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modal-add');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function saveAsset(e) {
+      e.preventDefault();
+      const index = parseInt(document.getElementById('asset-edit-index').value, 10);
+      const name = document.getElementById('asset-name').value.trim();
+      const qty = parseFloat(document.getElementById('asset-qty').value) || 0;
+      const buyPrice = parseFloat(document.getElementById('asset-buy-price').value) || 0;
+      const currPrice = parseFloat(document.getElementById('asset-curr-price').value) || 0;
+      const dailyChange = parseFloat(document.getElementById('asset-daily-change').value) || 0;
+
+      const newAsset = { name, qty, buyPrice, currPrice, dailyChange };
+
+      if (index >= 0 && index < portfolioData.assets.length) {
+        portfolioData.assets[index] = newAsset;
+      } else {
+        portfolioData.assets.push(newAsset);
+      }
+
+      saveUserData();
+      updateUI();
+      closeModal();
+    }
+
+    function deleteAsset(index) {
+      if (confirm(`Sei sicuro di voler eliminare "${portfolioData.assets[index]?.name || 'questo titolo'}"?`)) {
+        portfolioData.assets.splice(index, 1);
+        saveUserData();
+        updateUI();
+      }
+    }
+
+    // Gestione Modifica Liquidità
+    function editCash() {
+      const currentCash = portfolioData.cash || 0;
+      const input = prompt("Inserisci il nuovo valore della liquidità (€):", currentCash);
+      if (input !== null) {
+        const newCash = parseFloat(input.replace(',', '.'));
+        if (!isNaN(newCash)) {
+          portfolioData.cash = newCash;
+          
+          // Aggiorna lo storico del mese corrente
+          const todayStr = new Date().toISOString().slice(0, 7);
+          let todayHist = portfolioData.history.find(h => h.date === todayStr);
+          const stocksTotal = portfolioData.assets.reduce((acc, a) => acc + ((a.qty || 0) * (a.currPrice || 0)), 0);
+          
+          if (todayHist) {
+            todayHist.cash = newCash;
+            todayHist.stocks = stocksTotal;
+          } else {
+            portfolioData.history.push({ date: todayStr, cash: newCash, stocks: stocksTotal });
+          }
+
+          saveUserData();
+          updateUI();
+        } else {
+          alert("Valore non valido.");
         }
-      });
-    })();
+      }
+    }
+
+    // Gestione CSV Storico (Import / Export)
+    function downloadCSVTemplate() {
+      const csvContent = "data:text/csv;charset=utf-8," 
+        + "AnnoMese;Liquidita;Titoli\n"
+        + "2026-01;5000;12000\n"
+        + "2026-02;5200;12500\n"
+        + "2026-03;5100;13000\n";
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "modello_storico_patrimonio.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function uploadCSVHistory(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split(/\r\n|\n/);
+        const newHistory = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const parts = line.includes(';') ? line.split(';') : line.split(',');
+          if (parts.length >= 3) {
+            const date = parts[0].trim();
+            const cash = parseFloat(parts[1].replace(',', '.').trim()) || 0;
+            const stocks = parseFloat(parts[2].replace(',', '.').trim()) || 0;
+
+            if (date) {
+              newHistory.push({ date, cash, stocks });
+            }
+          }
+        }
+
+        if (newHistory.length > 0) {
+          portfolioData.history = newHistory;
+          saveUserData();
+          updateUI();
+          alert(`Caricati ${newHistory.length} record storici con successo!`);
+        } else {
+          alert("Formato CSV non valido. Assicurati che le colonne siano: AnnoMese;Liquidita;Titoli");
+        }
+      };
+      reader.readAsText(file);
+    }
   </script>
 </body>
 </html>
