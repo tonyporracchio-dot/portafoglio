@@ -96,7 +96,7 @@
         <button 
           id="btn-add-asset"
           onclick="openModal()" 
-          class="hidden text-xs text-slate-400 hover:text-slate-100 bg-slate-900/60 hover:bg-slate-700/50 border border-slate-700/70 px-2.5 py-1 rounded-md transition-all flex items-center gap-1 font-normal">
+          class="text-xs text-slate-400 hover:text-slate-100 bg-slate-900/60 hover:bg-slate-700/50 border border-slate-700/70 px-2.5 py-1 rounded-md transition-all flex items-center gap-1 font-normal">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -121,7 +121,7 @@
           <tbody id="assets-table-body" class="divide-y divide-slate-700/40">
             <tr>
               <td colspan="8" class="py-8 text-center text-slate-500 text-xs">
-                Effettua l'accesso per caricare i tuoi dati.
+                Caricamento dati in corso...
               </td>
             </tr>
           </tbody>
@@ -175,7 +175,7 @@
     </div>
   </div>
 
-  <!-- FIREBASE CONFIG & LOGICA -->
+  <!-- FIREBASE CONFIG & LOGICA INTEGRATA -->
   <script>
     // Configurazione Firebase
     const firebaseConfig = {
@@ -197,7 +197,7 @@
     let currentUser = null;
     let portfolioData = { cash: 0, assets: [] };
 
-    // Helper sicuro per aggiornare elementi DOM
+    // Helper sicuri DOM
     function safeSetText(id, text) {
       const el = document.getElementById(id);
       if (el) el.innerText = text;
@@ -208,7 +208,70 @@
       if (el) el.className = className;
     }
 
-    // Gestione stato Login
+    // Normalizzatore universale per la struttura dei dati
+    function normalizeData(raw) {
+      if (!raw) return { assets: [], cash: 0 };
+      
+      let assets = [];
+      let cash = 0;
+
+      // 1. Gestione Titoli / Assets
+      const rawAssets = raw.assets || raw.portafoglio || [];
+      if (Array.isArray(rawAssets)) {
+        assets = rawAssets.map(item => ({
+          name: item.name || item.nome || item.ticker || 'Titolo',
+          qty: parseFloat(item.qty || item.quantita || 0),
+          buyPrice: parseFloat(item.buyPrice || item.pmc || item.prezzo || 0),
+          currPrice: parseFloat(item.currPrice || item.prezzo || item.pmc || 0),
+          dailyChange: parseFloat(item.dailyChange || 0)
+        }));
+      }
+
+      // 2. Gestione Liquidità
+      if (typeof raw.cash === 'number') {
+        cash = raw.cash;
+      } else if (Array.isArray(raw.cash)) {
+        cash = raw.cash.reduce((sum, i) => sum + (parseFloat(i.importo) || 0), 0);
+      } else if (Array.isArray(raw.storicoLiquidita) && raw.storicoLiquidita.length > 0) {
+        const sorted = [...raw.storicoLiquidita].sort((a, b) => (b.mese || '').localeCompare(a.mese || ''));
+        const latestMese = sorted[0].mese;
+        cash = sorted
+          .filter(i => i.mese === latestMese)
+          .reduce((sum, i) => sum + (parseFloat(i.importo) || 0), 0);
+      } else if (typeof raw.storicoLiquidita === 'number') {
+        cash = raw.storicoLiquidita;
+      }
+
+      return { assets, cash };
+    }
+
+    // Caricamento Dati Locale (localStorage) per ripristino immediato
+    function loadFromLocalStorage() {
+      try {
+        const localPort = JSON.parse(localStorage.getItem('portafoglio_v5')) || [];
+        const localLiq = JSON.parse(localStorage.getItem('storico_liquidita_v1')) || [];
+        const localNew = JSON.parse(localStorage.getItem('patrimonio_data_v1'));
+
+        if (localNew) {
+          return normalizeData(localNew);
+        } else if (localPort.length > 0 || localLiq.length > 0) {
+          return normalizeData({ portafoglio: localPort, storicoLiquidita: localLiq });
+        }
+      } catch (e) {
+        console.error("Errore lettura localStorage:", e);
+      }
+      return { assets: [], cash: 0 };
+    }
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('patrimonio_data_v1', JSON.stringify(portfolioData));
+      } catch (e) {
+        console.error("Errore salvataggio localStorage:", e);
+      }
+    }
+
+    // Gestione stato Login Firebase
     auth.onAuthStateChanged((user) => {
       if (user) {
         currentUser = user;
@@ -222,10 +285,7 @@
         const userPhoto = document.getElementById('user-photo');
         if (userPhoto) userPhoto.src = user.photoURL || '';
 
-        const btnAddAsset = document.getElementById('btn-add-asset');
-        if (btnAddAsset) btnAddAsset.classList.remove('hidden');
-        
-        loadUserData();
+        loadUserDataFromCloud();
       } else {
         currentUser = null;
         
@@ -234,11 +294,10 @@
 
         const userProfile = document.getElementById('user-profile');
         if (userProfile) userProfile.classList.add('hidden');
-
-        const btnAddAsset = document.getElementById('btn-add-asset');
-        if (btnAddAsset) btnAddAsset.classList.add('hidden');
         
-        renderTable();
+        // Se non loggato, mostra comunque i dati da localStorage
+        portfolioData = loadFromLocalStorage();
+        updateUI();
       }
     });
 
@@ -251,31 +310,44 @@
       auth.signOut();
     }
 
-    function loadUserData() {
+    function loadUserDataFromCloud() {
       if (!currentUser) return;
 
       db.collection('portafogli_utenti').doc(currentUser.uid).onSnapshot((doc) => {
         if (doc.exists) {
-          const data = doc.data();
-          portfolioData = {
-            cash: data.cash || data.storicoLiquidita || 0,
-            assets: data.assets || data.portafoglio || []
-          };
-          if (Array.isArray(portfolioData.cash)) {
-            portfolioData.cash = portfolioData.cash.reduce((sum, item) => sum + (item.importo || 0), 0);
+          const cloudData = doc.data();
+          const normalized = normalizeData(cloudData);
+
+          // Se il cloud ha dati li usa, altrimenti se ha locale fa la prima sincronizzazione
+          if (normalized.assets.length > 0 || normalized.cash > 0) {
+            portfolioData = normalized;
+          } else {
+            const localData = loadFromLocalStorage();
+            if (localData.assets.length > 0 || localData.cash > 0) {
+              portfolioData = localData;
+              saveUserData();
+            }
           }
         } else {
-          portfolioData = { cash: 0, assets: [] };
+          // Documento Firestore non ancora creato: carica da locale e migra su cloud
+          portfolioData = loadFromLocalStorage();
           saveUserData();
         }
+        saveToLocalStorage();
         updateUI();
-      }, err => console.error("Errore lettura dati:", err));
+      }, err => {
+        console.error("Errore lettura Firestore:", err);
+        portfolioData = loadFromLocalStorage();
+        updateUI();
+      });
     }
 
     function saveUserData() {
-      if (!currentUser) return;
-      db.collection('portafogli_utenti').doc(currentUser.uid).set(portfolioData)
-        .catch(err => console.error("Errore salvataggio:", err));
+      saveToLocalStorage();
+      if (currentUser) {
+        db.collection('portafogli_utenti').doc(currentUser.uid).set(portfolioData)
+          .catch(err => console.error("Errore salvataggio Cloud:", err));
+      }
     }
 
     function updateUI() {
@@ -284,9 +356,9 @@
       let totalDailyGainLoss = 0;
 
       portfolioData.assets.forEach(a => {
-        const qty = a.qty || a.quantita || 0;
-        const currPrice = a.currPrice || a.prezzo || 0;
-        const buyPrice = a.buyPrice || a.pmc || 0;
+        const qty = a.qty || 0;
+        const currPrice = a.currPrice || 0;
+        const buyPrice = a.buyPrice || 0;
 
         const val = qty * currPrice;
         totalInvestedVal += val;
@@ -325,22 +397,17 @@
     function renderTable() {
       const tbody = document.getElementById('assets-table-body');
       if (!tbody) return;
-      
-      if (!currentUser) {
-        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Effettua l'accesso per visualizzare il portafoglio.</td></tr>`;
-        return;
-      }
 
       if (portfolioData.assets.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Nessun titolo. Clicca su "+ Aggiungi" in alto a destra nella tabella.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Nessun titolo in portafoglio. Clicca su "+ Aggiungi" in alto a destra nella tabella.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = portfolioData.assets.map((item, index) => {
-        const name = item.name || item.ticker || 'Titolo';
-        const qty = item.qty || item.quantita || 0;
-        const buyPrice = item.buyPrice || item.pmc || 0;
-        const currPrice = item.currPrice || item.prezzo || buyPrice;
+        const name = item.name || 'Titolo';
+        const qty = item.qty || 0;
+        const buyPrice = item.buyPrice || 0;
+        const currPrice = item.currPrice || buyPrice;
 
         const val = qty * currPrice;
         const cost = qty * buyPrice;
@@ -413,8 +480,8 @@
 
     function editAsset(index) {
       const asset = portfolioData.assets[index];
-      const name = asset.name || asset.ticker || 'Titolo';
-      const currP = asset.currPrice || asset.prezzo || 0;
+      const name = asset.name || 'Titolo';
+      const currP = asset.currPrice || 0;
       
       const newCurrPrice = prompt(`Nuovo Prezzo Attuale per ${name} (€):`, currP);
       if (newCurrPrice === null) return;
@@ -454,6 +521,10 @@
     function formatEUR(val) {
       return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val || 0);
     }
+
+    // Avvio iniziale: carica subito da localStorage per reattività istantanea
+    portfolioData = loadFromLocalStorage();
+    updateUI();
   </script>
 </body>
 </html>
