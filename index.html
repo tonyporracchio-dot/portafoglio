@@ -354,7 +354,7 @@
       }
     }
 
-    // CHIAMATA AL PROXY RENDER CON SUPPORTO CORS E GESTIONE ERRORI
+    // CHIAMATA DIRETTA AL PROXY RENDER SENZA INTERMEDIARI
     async function fetchPricesFromProxy() {
       if (portfolioData.assets.length === 0) {
         alert("Nessun titolo presente in portafoglio.");
@@ -370,15 +370,14 @@
       let updatedCount = 0;
 
       try {
-        const requests = portfolioData.assets.map(async (asset) => {
-          const symbol = asset.name.trim();
-          if (!symbol) return;
+        // Esegue le chiamate in sequenza o con leggeri ritardi per evitare sovraccarichi o blocchi
+        for (let asset of portfolioData.assets) {
+          const symbol = asset.name ? asset.name.trim() : '';
+          if (!symbol) continue;
 
-          const targetUrl = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
-          const url = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
+          const url = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
           
           let success = false;
-          // Effettua fino a 2 tentativi in caso di cold start del server Render
           for (let attempt = 1; attempt <= 2; attempt++) {
             try {
               const res = await fetch(url);
@@ -394,26 +393,24 @@
                   break;
                 }
               }
-            } catch (e) {
-              // Riprova se fallisce al primo colpo
+            } catch (err) {
+              console.warn(`Tentativo ${attempt} fallito per ${symbol}:`, err);
             }
             if (!success && attempt === 1) {
-              await new Promise(r => setTimeout(r, 2000)); // Attende 2 secondi prima del secondo tentativo
+              await new Promise(r => setTimeout(r, 1500)); // Attende 1.5 secondi in caso di cold start
             }
           }
-        });
-
-        await Promise.all(requests);
+        }
 
         if (updatedCount > 0) {
           saveUserData();
           updateUI();
         } else {
-          alert("Impossibile recuperare i prezzi. Verifica che i ticker siano corretti (es. SWDA.MI, AAPL).");
+          alert("Impossibile recuperare i prezzi. Assicurati che i ticker inseriti siano validi per Yahoo Finance (es. SWDA.MI, AAPL). Se il server era in sleep, riprova tra qualche secondo.");
         }
       } catch (err) {
-        console.error("Errore durante la chiamata al proxy:", err);
-        alert("Errore di connessione al proxy.");
+        console.error("Errore generale durante l'aggiornamento:", err);
+        alert("Errore di connessione al server proxy.");
       } finally {
         if (refreshIcon) refreshIcon.classList.remove('animate-spin');
         if (refreshLabel) refreshLabel.innerText = "Aggiorna Prezzi";
@@ -554,7 +551,7 @@
       const newCurrPrice = prompt(`Nuovo Prezzo Attuale per ${name} (€):`, currP);
       if (newCurrPrice === null) return;
       
-      const newDailyChange = prompt(`Variazione Giornaliera per ${name} (%):`, asset.dailyChange || 0);
+      The newDailyChange = prompt(`Variazione Giornaliera per ${name} (%):`, asset.dailyChange || 0);
       if (newDailyChange === null) return;
 
       const pVal = parseFloat(newCurrPrice);
