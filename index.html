@@ -1,587 +1,121 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mio Patrimonio</title>
-
-  <!-- PWA & Mobile Settings -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Patrimonio">
-  <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/512/chart-increasing-emoji.png">
-
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Firebase SDKs (Compat Version) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aggiornamento Liquidità</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+        .widget-container {
+            max-width: 350px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Assicura che il padding non allarghi l'input */
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #risultatoVariazione {
+            margin-top: 15px;
+            font-size: 15px;
+            color: #333;
+        }
+        .valore-positivo {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .valore-negativo {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-12">
+<body>
 
-  <!-- BARRA SUPERIORE ESSENZIALE -->
-  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-2.5">
-    <div class="max-w-4xl mx-auto flex justify-between items-center">
-      
-      <!-- Titolo App -->
-      <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-        Patrimonio
-      </span>
+    <div class="widget-container">
+        <h3>Liquidità Attuale</h3>
+        
+        <label for="inputLiquidita">Totale Liquidità (€):</label>
+        <input type="number" id="inputLiquidita" placeholder="Es. 15000" step="0.01">
+        
+        <button onclick="aggiornaLiquidita()">Aggiorna</button>
 
-      <!-- Profilo / Login -->
-      <div id="auth-container">
-        <button 
-          id="btn-login" 
-          onclick="loginWithGoogle()" 
-          class="text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/60 py-1 px-2.5 rounded-md transition-all flex items-center gap-1.5">
-          <svg class="w-3 h-3" viewBox="0 0 24 24">
-            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
-            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
-            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
-          </svg>
-          Accedi
-        </button>
-
-        <div id="user-profile" class="hidden flex items-center gap-2">
-          <img id="user-photo" class="w-6 h-6 rounded-full border border-slate-700" src="" alt="User">
-          <button 
-            onclick="logout()" 
-            class="text-[11px] text-slate-400 hover:text-slate-200 transition-colors">
-            Esci
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </header>
-
-  <!-- CONTENUTO PRINCIPALE -->
-  <main class="max-w-4xl mx-auto px-4 pt-6 space-y-6">
-
-    <!-- SCHEDE RIEPILOGO -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
-        <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Patrimonio Totale</span>
-        <div id="total-val" class="text-2xl font-bold text-white mt-1">€ 0,00</div>
-        <div id="daily-total-val" class="text-xs font-semibold mt-1 text-slate-400">Oggi: € 0,00 (0.00%)</div>
-      </div>
-
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
-        <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Valore Titoli</span>
-        <div id="invested-val" class="text-2xl font-bold text-blue-400 mt-1">€ 0,00</div>
-        <div id="gain-loss-val" class="text-xs font-semibold mt-1 text-slate-400">Totale: € 0,00 (0.00%)</div>
-      </div>
-
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
-        <div class="flex justify-between items-center">
-          <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Liquidità</span>
-          <button onclick="editCash()" class="text-xs text-blue-400 hover:underline">Modifica</button>
-        </div>
-        <div id="cash-val" class="text-2xl font-bold text-emerald-400 mt-1">€ 0,00</div>
-      </div>
+        <!-- Il risultato apparirà qui sotto -->
+        <div id="risultatoVariazione"></div>
     </div>
 
-    <!-- LISTA TITOLI -->
-    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl shadow-sm overflow-hidden">
-      
-      <!-- HEADING SCHEDA CON PULSANTI -->
-      <div class="px-4 py-3 border-b border-slate-700/60 flex justify-between items-center">
-        <h2 class="font-medium text-slate-300 text-xs uppercase tracking-wider">Titoli & ETF</h2>
-        
-        <div class="flex items-center gap-2">
-          <!-- PULSANTE AGGIORNA PREZZI -->
-          <button 
-            id="btn-refresh-prices"
-            onclick="fetchPricesFromProxy()" 
-            class="text-xs text-slate-300 hover:text-white bg-blue-900/40 hover:bg-blue-800/60 border border-blue-700/60 px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 font-normal">
-            <svg id="refresh-icon" class="h-3 w-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span id="refresh-label">Aggiorna Prezzi</span>
-          </button>
+    <script>
+        // Simulazione del dato precedentemente salvato.
+        // Nel progetto reale, questo valore verrà letto dal tuo database Firebase
+        // prima di eseguire il calcolo.
+        let liquiditaMesePrecedente = 10000; 
 
-          <!-- PULSANTE AGGIUNGI TITOLO -->
-          <button 
-            id="btn-add-asset"
-            onclick="openModal()" 
-            class="text-xs text-slate-400 hover:text-slate-100 bg-slate-900/60 hover:bg-slate-700/50 border border-slate-700/70 px-2.5 py-1 rounded-md transition-all flex items-center gap-1 font-normal">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Aggiungi
-          </button>
-        </div>
-      </div>
+        function aggiornaLiquidita() {
+            // Legge il valore dall'input
+            let inputVal = document.getElementById('inputLiquidita').value;
+            let nuovaLiquidita = parseFloat(inputVal);
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm text-slate-300">
-          <thead class="bg-slate-900/40 text-[11px] uppercase text-slate-400 border-b border-slate-700/60">
-            <tr>
-              <th class="py-2.5 px-4">Titolo</th>
-              <th class="py-2.5 px-4 text-right">Quantità</th>
-              <th class="py-2.5 px-4 text-right">Prezzo Med.</th>
-              <th class="py-2.5 px-4 text-right">Prezzo Att.</th>
-              <th class="py-2.5 px-4 text-right">Valore</th>
-              <th class="py-2.5 px-4 text-right">Var. Oggi</th>
-              <th class="py-2.5 px-4 text-right">Rendimento Tot.</th>
-              <th class="py-2.5 px-4 text-center">Azione</th>
-            </tr>
-          </thead>
-          <tbody id="assets-table-body" class="divide-y divide-slate-700/40">
-            <tr>
-              <td colspan="8" class="py-8 text-center text-slate-500 text-xs">
-                Caricamento dati in corso...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- MODALE PER AGGIUNGERE UN TITOLO -->
-  <div id="modal-add" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4">
-      <div class="flex justify-between items-center">
-        <h3 class="text-sm font-semibold text-white">Aggiungi titolo</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-white">&times;</button>
-      </div>
-
-      <form id="form-add-asset" onsubmit="saveAsset(event)" class="space-y-3">
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">Nome / Ticker (es. SWDA.MI, AAPL)</label>
-          <input type="text" id="asset-name" placeholder="es. SWDA.MI" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Quantità</label>
-            <input type="number" step="any" id="asset-qty" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Prezzo Med. (€)</label>
-            <input type="number" step="any" id="asset-buy-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Prezzo Attuale (€)</label>
-            <input type="number" step="any" id="asset-curr-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Var. Giornaliera (%)</label>
-            <input type="number" step="any" id="asset-daily-change" placeholder="es. +1.25" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="closeModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 rounded-lg">Annulla</button>
-          <button type="submit" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-xs font-medium text-white rounded-lg">Salva</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- LOGICA JAVASCRIPT & FIREBASE -->
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyC-WrC9fbfOrYWl3F3c9JGtMujBRs5-nEo",
-      authDomain: "portafoglio-gemini.firebaseapp.com",
-      projectId: "portafoglio-gemini",
-      storageBucket: "portafoglio-gemini.firebasestorage.app",
-      messagingSenderId: "190042969168",
-      appId: "1:190042969168:web:e60fe9fe7ea4a44b1e2d55",
-      measurementId: "G-5PWT8M9RD1"
-    };
-
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    let currentUser = null;
-    let portfolioData = { cash: 0, assets: [] };
-
-    function safeSetText(id, text) {
-      const el = document.getElementById(id);
-      if (el) el.innerText = text;
-    }
-
-    function safeSetClass(id, className) {
-      const el = document.getElementById(id);
-      if (el) el.className = className;
-    }
-
-    function normalizeData(raw) {
-      if (!raw) return { assets: [], cash: 0 };
-      
-      let assets = [];
-      let cash = 0;
-
-      const rawAssets = raw.assets || raw.portafoglio || [];
-      if (Array.isArray(rawAssets)) {
-        assets = rawAssets.map(item => ({
-          name: item.name || item.nome || item.ticker || 'Titolo',
-          qty: parseFloat(item.qty || item.quantita || 0),
-          buyPrice: parseFloat(item.buyPrice || item.pmc || item.prezzo || 0),
-          currPrice: parseFloat(item.currPrice || item.prezzo || item.pmc || 0),
-          dailyChange: parseFloat(item.dailyChange || 0)
-        }));
-      }
-
-      if (typeof raw.cash === 'number') {
-        cash = raw.cash;
-      } else if (Array.isArray(raw.cash)) {
-        cash = raw.cash.reduce((sum, i) => sum + (parseFloat(i.importo) || 0), 0);
-      } else if (Array.isArray(raw.storicoLiquidita) && raw.storicoLiquidita.length > 0) {
-        const sorted = [...raw.storicoLiquidita].sort((a, b) => (b.mese || '').localeCompare(a.mese || ''));
-        const latestMese = sorted[0].mese;
-        cash = sorted
-          .filter(i => i.mese === latestMese)
-          .reduce((sum, i) => sum + (parseFloat(i.importo) || 0), 0);
-      } else if (typeof raw.storicoLiquidita === 'number') {
-        cash = raw.storicoLiquidita;
-      }
-
-      return { assets, cash };
-    }
-
-    function loadFromLocalStorage() {
-      try {
-        const localPort = JSON.parse(localStorage.getItem('portafoglio_v5')) || [];
-        const localLiq = JSON.parse(localStorage.getItem('storico_liquidita_v1')) || [];
-        const localNew = JSON.parse(localStorage.getItem('patrimonio_data_v1'));
-
-        if (localNew) {
-          return normalizeData(localNew);
-        } else if (localPort.length > 0 || localLiq.length > 0) {
-          return normalizeData({ portafoglio: localPort, storicoLiquidita: localLiq });
-        }
-      } catch (e) {
-        console.error("Errore lettura localStorage:", e);
-      }
-      return { assets: [], cash: 0 };
-    }
-
-    function saveToLocalStorage() {
-      try {
-        localStorage.setItem('patrimonio_data_v1', JSON.stringify(portfolioData));
-      } catch (e) {
-        console.error("Errore salvataggio localStorage:", e);
-      }
-    }
-
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        currentUser = user;
-        
-        const btnLogin = document.getElementById('btn-login');
-        if (btnLogin) btnLogin.classList.add('hidden');
-        
-        const userProfile = document.getElementById('user-profile');
-        if (userProfile) userProfile.classList.remove('hidden');
-        
-        const userPhoto = document.getElementById('user-photo');
-        if (userPhoto) userPhoto.src = user.photoURL || '';
-
-        loadUserDataFromCloud();
-      } else {
-        currentUser = null;
-        
-        const btnLogin = document.getElementById('btn-login');
-        if (btnLogin) btnLogin.classList.remove('hidden');
-
-        const userProfile = document.getElementById('user-profile');
-        if (userProfile) userProfile.classList.add('hidden');
-        
-        portfolioData = loadFromLocalStorage();
-        updateUI();
-      }
-    });
-
-    function loginWithGoogle() {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(err => alert("Errore accesso: " + err.message));
-    }
-
-    function logout() {
-      auth.signOut();
-    }
-
-    function loadUserDataFromCloud() {
-      if (!currentUser) return;
-
-      db.collection('portafogli_utenti').doc(currentUser.uid).onSnapshot((doc) => {
-        if (doc.exists) {
-          const cloudData = doc.data();
-          const normalized = normalizeData(cloudData);
-
-          if (normalized.assets.length > 0 || normalized.cash > 0) {
-            portfolioData = normalized;
-          } else {
-            const localData = loadFromLocalStorage();
-            if (localData.assets.length > 0 || localData.cash > 0) {
-              portfolioData = localData;
-              saveUserData();
+            // Controllo per evitare errori se il campo è vuoto o non numerico
+            if (isNaN(nuovaLiquidita)) {
+                document.getElementById('risultatoVariazione').innerHTML = "<span class='valore-negativo'>Inserisci un valore numerico.</span>";
+                return;
             }
-          }
-        } else {
-          portfolioData = loadFromLocalStorage();
-          saveUserData();
+
+            // Calcoli
+            let variazioneEuro = nuovaLiquidita - liquiditaMesePrecedente;
+            let variazionePercentuale = (variazioneEuro / liquiditaMesePrecedente) * 100;
+
+            // Formattazione
+            let segno = variazioneEuro > 0 ? "+" : "";
+            let classeColore = variazioneEuro >= 0 ? "valore-positivo" : "valore-negativo";
+
+            // Creazione del testo finale in HTML
+            let testoVariazione = `Variazione mensile:<br> 
+                <span class="${classeColore}">
+                    ${segno}${variazioneEuro.toFixed(2)} € (${segno}${variazionePercentuale.toFixed(2)}%)
+                </span>`;
+
+            // Aggiornamento della pagina
+            document.getElementById('risultatoVariazione').innerHTML = testoVariazione;
+
+            // TODO: Inserire qui la logica di aggiornamento per Firebase
+            // Esempio:
+            // database.ref('utenti/liquidita').set(nuovaLiquidita);
         }
-        saveToLocalStorage();
-        updateUI();
-      }, err => {
-        console.error("Errore lettura Firestore:", err);
-        portfolioData = loadFromLocalStorage();
-        updateUI();
-      });
-    }
+    </script>
 
-    function saveUserData() {
-      saveToLocalStorage();
-      if (currentUser) {
-        db.collection('portafogli_utenti').doc(currentUser.uid).set(portfolioData)
-          .catch(err => console.error("Errore salvataggio Cloud:", err));
-      }
-    }
-
-    // CHIAMATA UNICA BATCH AL PROXY RENDER
-    async function fetchPricesFromProxy() {
-      if (portfolioData.assets.length === 0) {
-        alert("Nessun titolo presente in portafoglio.");
-        return;
-      }
-
-      const refreshIcon = document.getElementById('refresh-icon');
-      const refreshLabel = document.getElementById('refresh-label');
-      
-      if (refreshIcon) refreshIcon.classList.add('animate-spin');
-      if (refreshLabel) refreshLabel.innerText = "Aggiornamento...";
-
-      try {
-        const tickers = portfolioData.assets.map(a => a.name.trim()).join(',');
-        const url = `https://proxy-stocks-prices.onrender.com/price?symbols=${encodeURIComponent(tickers)}`;
-
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Errore HTTP ${res.status}`);
-
-        const data = await res.json();
-        const items = data.results || (Array.isArray(data) ? data : [data]);
-
-        let updatedCount = 0;
-
-        items.forEach(quote => {
-          const assetIndex = portfolioData.assets.findIndex(
-            a => a.name.trim().toUpperCase() === quote.symbol.toUpperCase()
-          );
-          if (assetIndex !== -1) {
-            if (typeof quote.price === 'number') {
-              portfolioData.assets[assetIndex].currPrice = quote.price;
-            }
-            if (typeof quote.changePercent === 'number') {
-              portfolioData.assets[assetIndex].dailyChange = quote.changePercent;
-            }
-            updatedCount++;
-          }
-        });
-
-        if (updatedCount > 0) {
-          saveUserData();
-          updateUI();
-        } else {
-          alert("Nessun dato aggiornato. Verifica la correttezza dei ticker.");
-        }
-      } catch (err) {
-        console.error("Errore aggiornamento prezzi:", err);
-        alert("Impossibile aggiornare i prezzi. Se il server Render era in sleep, attendi 10 secondi e riprova.");
-      } finally {
-        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
-        if (refreshLabel) refreshLabel.innerText = "Aggiorna Prezzi";
-      }
-    }
-
-    function updateUI() {
-      let totalInvestedVal = 0;
-      let totalCostVal = 0;
-      let totalDailyGainLoss = 0;
-
-      portfolioData.assets.forEach(a => {
-        const qty = a.qty || 0;
-        const currPrice = a.currPrice || 0;
-        const buyPrice = a.buyPrice || 0;
-
-        const val = qty * currPrice;
-        totalInvestedVal += val;
-        totalCostVal += (qty * buyPrice);
-
-        const dailyPerc = a.dailyChange || 0;
-        const previousVal = dailyPerc !== 0 ? val / (1 + (dailyPerc / 100)) : val;
-        totalDailyGainLoss += (val - previousVal);
-      });
-
-      const totalCash = typeof portfolioData.cash === 'number' ? portfolioData.cash : 0;
-      const totalPortfolio = totalInvestedVal + totalCash;
-      const totalProfit = totalInvestedVal - totalCostVal;
-      const totalProfitPerc = totalCostVal > 0 ? (totalProfit / totalCostVal) * 100 : 0;
-      
-      const prevTotalPortfolio = totalPortfolio - totalDailyGainLoss;
-      const totalDailyPerc = prevTotalPortfolio > 0 ? (totalDailyGainLoss / prevTotalPortfolio) * 100 : 0;
-
-      safeSetText('total-val', formatEUR(totalPortfolio));
-      safeSetText('invested-val', formatEUR(totalInvestedVal));
-      safeSetText('cash-val', formatEUR(totalCash));
-
-      const isDailyPos = totalDailyGainLoss >= 0;
-      safeSetClass('daily-total-val', `text-xs font-semibold mt-1 ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}`);
-      safeSetText('daily-total-val', `Oggi: ${isDailyPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${totalDailyPerc.toFixed(2)}%)`);
-
-      const isPos = totalProfit >= 0;
-      safeSetClass('gain-loss-val', `text-xs font-semibold mt-1 ${isPos ? 'text-emerald-400' : 'text-rose-400'}`);
-      safeSetText('gain-loss-val', `Totale: ${isPos ? '+' : ''}${formatEUR(totalProfit)} (${totalProfitPerc.toFixed(2)}%)`);
-
-      renderTable();
-    }
-
-    function renderTable() {
-      const tbody = document.getElementById('assets-table-body');
-      if (!tbody) return;
-
-      if (portfolioData.assets.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Nessun titolo in portafoglio. Clicca su "+ Aggiungi" per iniziare.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = portfolioData.assets.map((item, index) => {
-        const name = item.name || 'Titolo';
-        const qty = item.qty || 0;
-        const buyPrice = item.buyPrice || 0;
-        const currPrice = item.currPrice || buyPrice;
-
-        const val = qty * currPrice;
-        const cost = qty * buyPrice;
-        const profit = val - cost;
-        const profitPerc = cost > 0 ? (profit / cost) * 100 : 0;
-        const isPos = profit >= 0;
-
-        const dailyPerc = item.dailyChange || 0;
-        const isDailyPos = dailyPerc >= 0;
-
-        return `
-          <tr class="hover:bg-slate-800/30 transition-colors">
-            <td class="py-2.5 px-4 font-medium text-white text-xs">${name}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${qty}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${formatEUR(buyPrice)}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${formatEUR(currPrice)}</td>
-            <td class="py-2.5 px-4 text-right font-medium text-white text-xs">${formatEUR(val)}</td>
-            
-            <td class="py-2.5 px-4 text-right font-medium text-xs ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
-              ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
-            </td>
-
-            <td class="py-2.5 px-4 text-right font-medium text-xs ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
-              ${isPos ? '+' : ''}${formatEUR(profit)} (${profitPerc.toFixed(2)}%)
-            </td>
-
-            <td class="py-2.5 px-4 text-center flex justify-center gap-1">
-              <button onclick="editAsset(${index})" class="text-slate-500 hover:text-blue-400 p-1 transition-colors" title="Modifica">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
-                </svg>
-              </button>
-              <button onclick="deleteAsset(${index})" class="text-slate-600 hover:text-rose-400 p-1 transition-colors" title="Elimina">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    function openModal() {
-      const modal = document.getElementById('modal-add');
-      if (modal) modal.classList.remove('hidden');
-    }
-
-    function closeModal() {
-      const modal = document.getElementById('modal-add');
-      if (modal) modal.classList.add('hidden');
-      const form = document.getElementById('form-add-asset');
-      if (form) form.reset();
-    }
-
-    function saveAsset(e) {
-      e.preventDefault();
-      const name = document.getElementById('asset-name').value.trim();
-      const qty = parseFloat(document.getElementById('asset-qty').value);
-      const buyPrice = parseFloat(document.getElementById('asset-buy-price').value);
-      const currPrice = parseFloat(document.getElementById('asset-curr-price').value);
-      const dailyChange = parseFloat(document.getElementById('asset-daily-change').value) || 0;
-
-      if (!name || isNaN(qty) || isNaN(buyPrice) || isNaN(currPrice)) return;
-
-      portfolioData.assets.push({ name, qty, buyPrice, currPrice, dailyChange });
-      saveUserData();
-      closeModal();
-    }
-
-    function editAsset(index) {
-      const asset = portfolioData.assets[index];
-      const name = asset.name || 'Titolo';
-      const currP = asset.currPrice || 0;
-      
-      const newCurrPrice = prompt(`Nuovo Prezzo Attuale per ${name} (€):`, currP);
-      if (newCurrPrice === null) return;
-      
-      const newDailyChange = prompt(`Variazione Giornaliera per ${name} (%):`, asset.dailyChange || 0);
-      if (newDailyChange === null) return;
-
-      const pVal = parseFloat(newCurrPrice);
-      const dVal = parseFloat(newDailyChange);
-
-      if (!isNaN(pVal) && !isNaN(dVal)) {
-        portfolioData.assets[index].currPrice = pVal;
-        portfolioData.assets[index].dailyChange = dVal;
-        saveUserData();
-      }
-    }
-
-    function deleteAsset(index) {
-      if (confirm("Rimuovere questo titolo dal portafoglio?")) {
-        portfolioData.assets.splice(index, 1);
-        saveUserData();
-      }
-    }
-
-    function editCash() {
-      const currentCash = typeof portfolioData.cash === 'number' ? portfolioData.cash : 0;
-      const newCash = prompt("Nuova liquidità (€):", currentCash);
-      if (newCash !== null) {
-        const val = parseFloat(newCash);
-        if (!isNaN(val)) {
-          portfolioData.cash = val;
-          saveUserData();
-        }
-      }
-    }
-
-    function formatEUR(val) {
-      return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val || 0);
-    }
-
-    // Avvio iniziale
-    portfolioData = loadFromLocalStorage();
-    updateUI();
-  </script>
 </body>
 </html>
