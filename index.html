@@ -236,7 +236,7 @@
           qty: parseFloat(item.qty || item.quantita || 0),
           buyPrice: parseFloat(item.buyPrice || item.pmc || item.prezzo || 0),
           currPrice: parseFloat(item.currPrice || item.prezzo || item.pmc || 0),
-          dailyChange: parseFloat(item.dailyChange ?? item.changePercent ?? item.varGiornaliera ?? 0)
+          dailyChange: parseFloat(item.dailyChange ?? item.changePercent ?? 0)
         }));
       }
 
@@ -363,7 +363,7 @@
       }
     }
 
-    // AGGIORNAMENTO PREZZI ROBUSTO (DOPPIO FALLBACK BATCH + SINGOLO)
+    // CHIAMATA API A RENDER CON TENTATIVO DI RISVEGLIO SERVER
     async function fetchPricesFromProxy() {
       if (portfolioData.assets.length === 0) {
         alert("Nessun titolo presente in portafoglio.");
@@ -374,83 +374,69 @@
       const refreshLabel = document.getElementById('refresh-label');
       
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
-      if (refreshLabel) refreshLabel.innerText = "Aggiornamento...";
+      if (refreshLabel) refreshLabel.innerText = "Connessione...";
 
-      let updatedCount = 0;
+      const tickers = portfolioData.assets.map(a => a.name.trim()).join(',');
+      const url = `https://proxy-stocks-prices.onrender.com/price?symbols=${encodeURIComponent(tickers)}`;
 
-      try {
-        const tickers = portfolioData.assets.map(a => a.name.trim()).join(',');
-        const batchUrl = `https://proxy-stocks-prices.onrender.com/price?symbols=${encodeURIComponent(tickers)}`;
+      let success = false;
+      let data = null;
 
-        let batchSuccess = false;
+      // Fino a 2 tentativi per gestire l'eventuale "risveglio" di Render (25 sec timeout)
+      for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          const res = await fetch(batchUrl);
+          if (attempt === 2 && refreshLabel) refreshLabel.innerText = "Risveglio server...";
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
           if (res.ok) {
-            const data = await res.json();
-            const items = data.results || (Array.isArray(data) ? data : null);
-
-            if (items) {
-              items.forEach(quote => {
-                const assetIndex = portfolioData.assets.findIndex(
-                  a => a.name.trim().toUpperCase() === quote.symbol.toUpperCase()
-                );
-                if (assetIndex !== -1) {
-                  if (typeof quote.price === 'number') {
-                    portfolioData.assets[assetIndex].currPrice = quote.price;
-                  }
-                  const change = quote.changePercent ?? quote.regularMarketChangePercent ?? quote.dailyChange;
-                  if (typeof change === 'number' && !isNaN(change)) {
-                    portfolioData.assets[assetIndex].dailyChange = change;
-                  }
-                  updatedCount++;
-                }
-              });
-              batchSuccess = true;
-            }
+            data = await res.json();
+            success = true;
+            break;
           }
-        } catch (e) {
-          console.warn("Chiamata batch non riuscita, ricorro alle chiamate singole:", e);
+        } catch (err) {
+          console.warn(`Tentativo ${attempt} fallito:`, err);
         }
+      }
 
-        // Fallback su chiamate singole se la richiesta batch fallisce
-        if (!batchSuccess) {
-          for (let asset of portfolioData.assets) {
-            const symbol = asset.name.trim();
-            if (!symbol) continue;
+      if (success && data) {
+        const items = data.results || (Array.isArray(data) ? data : [data]);
+        let updatedCount = 0;
 
-            const singleUrl = `https://proxy-stocks-prices.onrender.com/price?symbol=${encodeURIComponent(symbol)}`;
-            try {
-              const res = await fetch(singleUrl);
-              if (res.ok) {
-                const quote = await res.json();
-                if (quote && typeof quote.price === 'number') {
-                  asset.currPrice = quote.price;
-                  const change = quote.changePercent ?? quote.regularMarketChangePercent ?? quote.dailyChange;
-                  if (typeof change === 'number' && !isNaN(change)) {
-                    asset.dailyChange = change;
-                  }
-                  updatedCount++;
-                }
-              }
-            } catch (err) {
-              console.warn(`Errore recupero per ${symbol}:`, err);
+        items.forEach(quote => {
+          if (!quote || !quote.symbol) return;
+
+          const assetIndex = portfolioData.assets.findIndex(
+            a => a.name.trim().toUpperCase() === quote.symbol.toUpperCase()
+          );
+
+          if (assetIndex !== -1) {
+            if (typeof quote.price === 'number' && quote.price > 0) {
+              portfolioData.assets[assetIndex].currPrice = quote.price;
             }
+            if (typeof quote.changePercent === 'number') {
+              portfolioData.assets[assetIndex].dailyChange = quote.changePercent;
+            }
+            updatedCount++;
           }
-        }
+        });
 
         if (updatedCount > 0) {
           saveUserData();
           updateUI();
         } else {
-          alert("Nessun prezzo aggiornato. Verifica che i ticker siano validi (es. SWDA.MI, AAPL) o riprova se il server Render si stava risvegliando.");
+          alert("I ticker specificati non hanno restituito dati validi. Controlla i simboli (es. SWDA.MI, AAPL).");
         }
-      } catch (err) {
-        console.error("Errore generale durante l'aggiornamento:", err);
-        alert("Errore di connessione al server proxy.");
-      } finally {
-        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
-        if (refreshLabel) refreshLabel.innerText = "Aggiorna Prezzi";
+      } else {
+        alert("Il server su Render è ancora in fase di avvio. Riprova tra 10 secondi.");
       }
+
+      if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+      if (refreshLabel) refreshLabel.innerText = "Aggiorna Prezzi";
     }
 
     function updateUI() {
