@@ -94,7 +94,7 @@
         <h2 class="font-medium text-slate-300 text-xs uppercase tracking-wider">Titoli & ETF</h2>
         
         <div class="flex items-center gap-2">
-          <!-- PULSANTE AGGIORNA PREZZI (CALL TO RENDER PROXY) -->
+          <!-- PULSANTE AGGIORNA PREZZI -->
           <button 
             id="btn-refresh-prices"
             onclick="fetchPricesFromProxy()" 
@@ -189,7 +189,7 @@
     </div>
   </div>
 
-  <!-- FIREBASE CONFIG & LOGICA INTEGRATA -->
+  <!-- LOGICA JAVASCRIPT & FIREBASE -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyC-WrC9fbfOrYWl3F3c9JGtMujBRs5-nEo",
@@ -354,7 +354,7 @@
       }
     }
 
-    // CHIAMATA DIRETTA AL TUO PROXY RENDER (proxy-stocks-prices.onrender.com)
+    // CHIAMATA AL PROXY RENDER PER OGNI TITOLO IN PORTAFOGLIO
     async function fetchPricesFromProxy() {
       if (portfolioData.assets.length === 0) {
         alert("Nessun titolo presente in portafoglio.");
@@ -365,12 +365,11 @@
       const refreshLabel = document.getElementById('refresh-label');
       
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
-      if (refreshLabel) refreshLabel.innerText = "Sveglia server...";
+      if (refreshLabel) refreshLabel.innerText = "Aggiornamento...";
 
       let updatedCount = 0;
 
       try {
-        // Esegue le chiamate in parallelo al tuo server Render per ciascun ticker
         const requests = portfolioData.assets.map(async (asset) => {
           const symbol = asset.name.trim();
           if (!symbol) return;
@@ -380,16 +379,12 @@
           try {
             const res = await fetch(url);
             if (!res.ok) return;
-            const data = await res.json();
+            const quote = await res.json();
 
-            // Supporto flessibile per le varie chiavi di risposta JSON dal proxy
-            const price = data.price ?? data.regularMarketPrice ?? data.currentPrice ?? data.c;
-            const change = data.changePercent ?? data.regularMarketChangePercent ?? data.dailyChange ?? data.p;
-
-            if (price !== undefined && price !== null && !isNaN(parseFloat(price))) {
-              asset.currPrice = parseFloat(price);
-              if (change !== undefined && change !== null && !isNaN(parseFloat(change))) {
-                asset.dailyChange = parseFloat(change);
+            if (quote && typeof quote.price === 'number' && quote.price > 0) {
+              asset.currPrice = quote.price;
+              if (typeof quote.changePercent === 'number') {
+                asset.dailyChange = quote.changePercent;
               }
               updatedCount++;
             }
@@ -404,7 +399,7 @@
           saveUserData();
           updateUI();
         } else {
-          alert("Impossibile recuperare i prezzi. Assicurati che i ticker inseriti siano validi per Yahoo Finance (es. SWDA.MI, AAPL). Se il server era in sleep, riprova tra 10 secondi.");
+          alert("Impossibile recuperare i prezzi. Se il server Render era in sleep, attendi 10 secondi e riprova.");
         }
       } catch (err) {
         console.error("Errore durante la chiamata al proxy:", err);
@@ -446,12 +441,10 @@
       safeSetText('invested-val', formatEUR(totalInvestedVal));
       safeSetText('cash-val', formatEUR(totalCash));
 
-      // Variazione Giornaliera Totale
       const isDailyPos = totalDailyGainLoss >= 0;
       safeSetClass('daily-total-val', `text-xs font-semibold mt-1 ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}`);
       safeSetText('daily-total-val', `Oggi: ${isDailyPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${totalDailyPerc.toFixed(2)}%)`);
 
-      // Rendimento Totale
       const isPos = totalProfit >= 0;
       safeSetClass('gain-loss-val', `text-xs font-semibold mt-1 ${isPos ? 'text-emerald-400' : 'text-rose-400'}`);
       safeSetText('gain-loss-val', `Totale: ${isPos ? '+' : ''}${formatEUR(totalProfit)} (${totalProfitPerc.toFixed(2)}%)`);
