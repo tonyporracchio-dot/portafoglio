@@ -3,96 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Widget Grafico CSV Dinamico</title>
-  <!-- Chart.js da CDN -->
+  <title>Portfolio & Liquidity Dashboard</title>
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg-color: #0f172a;
       --card-bg: #1e293b;
-      --text-color: #f8fafc;
-      --text-sub: #94a3b8;
-      --border-color: #334155;
-      --accent-color: #0ea5e9;
-      --accent-hover: #0284c7;
-      --color-ds1: #38bdf8; /* Prima serie */
-      --color-ds2: #a855f7; /* Seconda serie */
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-purple: #a855f7;
+      --accent-green: #34d399;
+      --accent-red: #f87171;
+      --btn-bg: #0ea5e9;
+      --btn-hover: #0284c7;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
       background-color: var(--bg-color);
-      color: var(--text-color);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      color: var(--text-main);
       min-height: 100vh;
-      padding: 20px;
+      display: flex;
+      flex-direction: column;
     }
 
-    .container {
-      width: 100%;
-      max-width: 960px;
+    /* Navbar */
+    nav {
       background-color: var(--card-bg);
-      border-radius: 16px;
-      padding: 28px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-      border: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    header {
+    .brand {
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-main);
+    }
+
+    .brand-icon {
+      width: 12px;
+      height: 12px;
+      background-color: var(--accent-blue);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-blue);
+    }
+
+    .user-badge {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.05);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+    }
+
+    /* Layout Container */
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Summary Grid Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .kpi-title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: var(--accent-green);
+    }
+
+    /* Main Chart Card */
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
-    h1 {
-      font-size: 1.35rem;
+    .card-title {
+      font-size: 1.1rem;
       font-weight: 600;
-      margin-bottom: 6px;
     }
 
-    p.subtitle {
-      font-size: 0.875rem;
-      color: var(--text-sub);
-    }
-
-    /* Barra Configurazione URL */
-    .url-config {
+    /* CSV URL Input Control */
+    .csv-control {
       display: flex;
       gap: 10px;
-      margin-bottom: 20px;
-      background: rgba(15, 23, 42, 0.6);
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border-color);
+      width: 100%;
+      margin-bottom: 16px;
+      background: rgba(15, 23, 42, 0.5);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
     }
 
-    .url-config input {
+    .csv-control input {
       flex: 1;
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      color: var(--text-color);
+      background: var(--bg-color);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
       padding: 10px 14px;
       border-radius: 6px;
       font-size: 0.875rem;
       outline: none;
-      transition: border-color 0.2s;
     }
 
-    .url-config input:focus {
-      border-color: var(--accent-color);
+    .csv-control input:focus {
+      border-color: var(--accent-blue);
     }
 
-    .url-config button {
-      background: var(--accent-color);
-      color: #fff;
+    .csv-control button {
+      background: var(--btn-bg);
+      color: #ffffff;
       border: none;
-      padding: 10px 18px;
+      padding: 10px 20px;
       border-radius: 6px;
       font-weight: 600;
       font-size: 0.875rem;
@@ -101,265 +181,318 @@
       white-space: nowrap;
     }
 
-    .url-config button:hover {
-      background: var(--accent-hover);
+    .csv-control button:hover {
+      background: var(--btn-hover);
     }
 
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
+    .status-text {
       font-size: 0.85rem;
-      color: var(--text-sub);
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      min-height: 20px;
     }
 
-    .chart-box {
+    .chart-container {
       position: relative;
       width: 100%;
       height: 420px;
     }
 
-    #error-msg {
-      display: none;
-      color: #f87171;
-      background-color: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      font-size: 0.875rem;
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--card-border);
+      margin-top: auto;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <header>
-      <h1>Visualizzatore Dati CSV</h1>
-      <p class="subtitle">Inserisci il link di esportazione CSV del tuo Google Sheet</p>
-    </header>
+  <!-- Navigation Bar -->
+  <nav>
+    <div class="brand">
+      <div class="brand-icon"></div>
+      <span>Portfolio & Liquidity Manager</span>
+    </div>
+    <div class="user-badge">Web App Dashboard</div>
+  </nav>
 
-    <!-- Controllo URL CSV -->
-    <div class="url-config">
-      <input 
-        type="text" 
-        id="csvUrlInput" 
-        placeholder="Incolla URL CSV qui..."
-        value="https://docs.google.com/spreadsheets/d/e/2PACX-1vTSh-PJ8uff324g2SKnIxq4UnXCWVJjl-wer-CDciNP3xXHTFCdX_FIumP5NA2I8XpWqRXL2gHoMKTq/pub?gid=2116695106&single=true&output=csv"
-      />
-      <button id="loadBtn">Carica Grafico</button>
+  <!-- Main Content -->
+  <main>
+
+    <!-- Top KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-title">Stato Connessione CSV</span>
+        <span class="kpi-value" id="kpiStatus">In Attesa</span>
+        <span class="kpi-sub" id="kpiDetail">Premi "Carica" per sincronizzare</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-title">Ultima Rilevazione</span>
+        <span class="kpi-value" id="kpiLastLabel">--</span>
+        <span class="kpi-sub">Data / Mese più recente</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-title">Punti Dati Inseriti</span>
+        <span class="kpi-value" id="kpiDataPoints">0</span>
+        <span class="kpi-sub">Righe elaborate dal foglio</span>
+      </div>
     </div>
 
-    <div class="status-bar">
-      <span id="status">In attesa...</span>
+    <!-- Chart Widget Card -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Andamento Storico (Google Sheets CSV)</h2>
+      </div>
+
+      <!-- Control Bar for Google Sheets CSV -->
+      <div class="csv-control">
+        <input 
+          type="text" 
+          id="csvUrlInput" 
+          placeholder="Incolla l'URL del CSV di Google Sheets..." 
+          value="https://docs.google.com/spreadsheets/d/e/2PACX-1vTSh-PJ8uff324g2SKnIxq4UnXCWVJjl-wer-CDciNP3xXHTFCdX_FIumP5NA2I8XpWqRXL2gHoMKTq/pub?gid=2116695106&single=true&output=csv"
+        />
+        <button id="btnLoadCsv">Carica Dati</button>
+      </div>
+
+      <div id="statusMessage" class="status-text">Pronto per il caricamento...</div>
+
+      <div class="chart-container">
+        <canvas id="mainChart"></canvas>
+      </div>
     </div>
 
-    <div id="error-msg"></div>
+  </main>
 
-    <div class="chart-box">
-      <canvas id="myChart"></canvas>
-    </div>
-  </div>
+  <!-- Footer -->
+  <footer>
+    Portfolio & Liquidity Web App &bull; Sincronizzato con Google Sheets CSV
+  </footer>
 
+  <!-- Application Logic -->
   <script>
-    let chartInstance = null; // Mantiene il riferimento per distruggere il vecchio grafico al ricaricamento
+    (function() {
+      let myChart = null;
 
-    // Recupera l'URL salvato in precedenza o usa quello predefinito
-    const defaultUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSh-PJ8uff324g2SKnIxq4UnXCWVJjl-wer-CDciNP3xXHTFCdX_FIumP5NA2I8XpWqRXL2gHoMKTq/pub?gid=2116695106&single=true&output=csv';
-    const savedUrl = localStorage.getItem('user_csv_url');
-    
-    const inputEl = document.getElementById('csvUrlInput');
-    if (savedUrl) {
-      inputEl.value = savedUrl;
-    } else {
-      inputEl.value = defaultUrl;
-    }
+      const DEFAULT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSh-PJ8uff324g2SKnIxq4UnXCWVJjl-wer-CDciNP3xXHTFCdX_FIumP5NA2I8XpWqRXL2gHoMKTq/pub?gid=2116695106&single=true&output=csv';
+      const inputUrl = document.getElementById('csvUrlInput');
+      const btnLoad = document.getElementById('btnLoadCsv');
+      const statusMsg = document.getElementById('statusMessage');
 
-    document.getElementById('loadBtn').addEventListener('click', () => {
-      const url = inputEl.value.trim();
-      if (url) {
-        localStorage.setItem('user_csv_url', url);
-        loadAndRenderChart(url);
+      // KPIs
+      const kpiStatus = document.getElementById('kpiStatus');
+      const kpiDetail = document.getElementById('kpiDetail');
+      const kpiLastLabel = document.getElementById('kpiLastLabel');
+      const kpiDataPoints = document.getElementById('kpiDataPoints');
+
+      // Ripristina l'URL salvato o imposta quello predefinito
+      const savedUrl = localStorage.getItem('app_csv_url');
+      if (savedUrl) {
+        inputUrl.value = savedUrl;
+      } else {
+        inputUrl.value = DEFAULT_URL;
       }
-    });
 
-    async function loadAndRenderChart(url) {
-      const statusEl = document.getElementById('status');
-      const errorEl = document.getElementById('error-msg');
-
-      errorEl.style.display = 'none';
-      statusEl.innerText = 'Caricamento dati in corso...';
-      statusEl.style.color = '#94a3b8';
-
-      try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Errore di connessione (${response.status})`);
-
-        const csvText = await response.text();
-        const parsedData = parseCSV(csvText);
-
-        if (parsedData.labels.length === 0) {
-          throw new Error('Nessuna riga di dati valida trovata nel file CSV.');
+      // Listener sul pulsante
+      btnLoad.addEventListener('click', () => {
+        const url = inputUrl.value.trim();
+        if (url) {
+          localStorage.setItem('app_csv_url', url);
+          fetchAndRender(url);
         }
+      });
 
-        renderChart(parsedData);
-        statusEl.innerText = `Grafico aggiornato (${parsedData.labels.length} punti dati caricati)`;
-        statusEl.style.color = '#34d399';
-      } catch (err) {
-        console.error(err);
-        statusEl.innerText = 'Errore nel caricamento';
-        statusEl.style.color = '#f87171';
-        errorEl.innerText = 'Impossibile elaborare il grafico: ' + err.message;
-        errorEl.style.display = 'block';
+      // Pulisce e converte le stringhe in numeri
+      function parseNumber(val) {
+        if (!val) return null;
+        let clean = val.replace(/"/g, '').replace(/€/g, '').replace(/\s/g, '').trim();
+        if (clean.includes(',') && clean.includes('.')) {
+          clean = clean.replace(/\./g, '').replace(',', '.');
+        } else if (clean.includes(',')) {
+          clean = clean.replace(',', '.');
+        }
+        const parsed = parseFloat(clean);
+        return isNaN(parsed) ? null : parsed;
       }
-    }
 
-    function cleanNumber(str) {
-      if (!str) return null;
-      let clean = str.replace(/"/g, '').replace(/€/g, '').replace(/\s/g, '').trim();
-      if (clean.includes(',') && clean.includes('.')) {
-        clean = clean.replace(/\./g, '').replace(',', '.');
-      } else if (clean.includes(',')) {
-        clean = clean.replace(',', '.');
-      }
-      const num = parseFloat(clean);
-      return isNaN(num) ? null : num;
-    }
+      // Funzione di caricamento ed elaborazione del CSV
+      async function fetchAndRender(url) {
+        statusMsg.style.color = '#94a3b8';
+        statusMsg.innerText = 'Caricamento dati dal foglio in corso...';
+        kpiStatus.innerText = 'Syncing...';
+        kpiStatus.style.color = '#38bdf8';
 
-    function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
-      if (lines.length === 0) return { labels: [], datasets: [] };
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`Errore di rete (${response.status})`);
 
-      // Intestazioni (Riga 0)
-      const headerCols = lines[0].split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)|;/);
-      const labelName = headerCols[0] ? headerCols[0].replace(/"/g, '').trim() : 'Mese';
-      const ds1Name = headerCols[1] ? headerCols[1].replace(/"/g, '').trim() : 'Serie 1';
-      const ds2Name = headerCols[2] ? headerCols[2].replace(/"/g, '').trim() : 'Serie 2';
+          const rawCsvText = await response.text();
+          const lines = rawCsvText.trim().split(/\r?\n/);
 
-      const labels = [];
-      const data1 = [];
-      const data2 = [];
-
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        const cols = line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)|;/);
-
-        if (cols.length >= 2) {
-          const lbl = cols[0].replace(/"/g, '').trim();
-          const val1 = cleanNumber(cols[1]);
-          const val2 = cols.length >= 3 ? cleanNumber(cols[2]) : null;
-
-          if (lbl && (val1 !== null || val2 !== null)) {
-            labels.push(lbl);
-            data1.push(val1);
-            data2.push(val2);
+          if (lines.length < 2) {
+            throw new Error('Il CSV non contiene righe di dati sufficienti.');
           }
+
+          // Riga 0 = Intestazioni colonne
+          const headers = lines[0].split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)|;/);
+          const xTitle = headers[0] ? headers[0].replace(/"/g, '').trim() : 'Mese';
+          const labelDs1 = headers[1] ? headers[1].replace(/"/g, '').trim() : 'Widget 2';
+          const labelDs2 = headers[2] ? headers[2].replace(/"/g, '').trim() : 'Widget 3';
+
+          const labels = [];
+          const dataset1 = [];
+          const dataset2 = [];
+
+          // Dati dalla riga 1 in poi
+          for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const cols = line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)|;/);
+            if (cols.length >= 2) {
+              const label = cols[0].replace(/"/g, '').trim();
+              const v1 = parseNumber(cols[1]);
+              const v2 = cols.length >= 3 ? parseNumber(cols[2]) : null;
+
+              if (label && (v1 !== null || v2 !== null)) {
+                labels.push(label);
+                dataset1.push(v1);
+                dataset2.push(v2);
+              }
+            }
+          }
+
+          if (labels.length === 0) {
+            throw new Error('Nessun dato valido estratto dal file.');
+          }
+
+          // Aggiorna Grafico
+          renderChart(labels, xTitle, labelDs1, dataset1, labelDs2, dataset2);
+
+          // Aggiorna KPI
+          statusMsg.innerText = `Sincronizzazione completata con successo!`;
+          statusMsg.style.color = '#34d399';
+          kpiStatus.innerText = 'Attivo';
+          kpiStatus.style.color = '#34d399';
+          kpiDetail.innerText = 'Dati CSV sincronizzati';
+          kpiLastLabel.innerText = labels[labels.length - 1];
+          kpiDataPoints.innerText = labels.length;
+
+        } catch (err) {
+          console.error(err);
+          statusMsg.innerText = 'Impossibile caricare il CSV: ' + err.message;
+          statusMsg.style.color = '#f87171';
+          kpiStatus.innerText = 'Errore';
+          kpiStatus.style.color = '#f87171';
+          kpiDetail.innerText = 'Verifica l\'URL del foglio';
         }
       }
 
-      const datasets = [
-        {
-          label: ds1Name,
-          data: data1,
-          borderColor: '#38bdf8',
-          backgroundColor: 'rgba(56, 189, 248, 0.1)',
-          borderWidth: 2.5,
-          tension: 0.3,
-          pointRadius: 4,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#38bdf8'
-        }
-      ];
+      // Disegna il grafico con Chart.js
+      function renderChart(labels, xTitle, label1, data1, label2, data2) {
+        const ctx = document.getElementById('mainChart').getContext('2d');
 
-      // Se esiste la colonna C, aggiunge il secondo dataset
-      if (data2.some(v => v !== null)) {
-        datasets.push({
-          label: ds2Name,
-          data: data2,
-          borderColor: '#a855f7',
-          backgroundColor: 'rgba(168, 85, 247, 0.1)',
-          borderWidth: 2.5,
-          tension: 0.3,
-          pointRadius: 4,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#a855f7'
+        if (myChart) {
+          myChart.destroy();
+        }
+
+        const datasets = [
+          {
+            label: label1,
+            data: data1,
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            borderWidth: 2.5,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#38bdf8',
+            fill: true
+          }
+        ];
+
+        if (data2.some(val => val !== null)) {
+          datasets.push({
+            label: label2,
+            data: data2,
+            borderColor: '#a855f7',
+            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+            borderWidth: 2.5,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#a855f7',
+            fill: true
+          });
+        }
+
+        myChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: datasets
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  color: '#f8fafc',
+                  font: { size: 13, weight: '600' },
+                  usePointStyle: true,
+                  padding: 20
+                }
+              },
+              tooltip: {
+                backgroundColor: '#1e293b',
+                titleColor: '#f8fafc',
+                bodyColor: '#cbd5e1',
+                borderColor: '#334155',
+                borderWidth: 1,
+                padding: 12
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: xTitle,
+                  color: '#94a3b8'
+                },
+                ticks: { color: '#94a3b8' },
+                grid: { color: '#334155' }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Valore',
+                  color: '#94a3b8'
+                },
+                ticks: { color: '#94a3b8' },
+                grid: { color: '#334155' }
+              }
+            }
+          }
         });
       }
 
-      return { labels, datasets, labelName };
-    }
-
-    function renderChart(parsedData) {
-      const ctx = document.getElementById('myChart').getContext('2d');
-
-      // Distrugge il vecchio grafico se esiste prima di crearne uno nuovo
-      if (chartInstance) {
-        chartInstance.destroy();
-      }
-
-      chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: parsedData.labels,
-          datasets: parsedData.datasets
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false
-          },
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: {
-                color: '#f8fafc',
-                font: { size: 13 },
-                usePointStyle: true,
-                padding: 20
-              }
-            },
-            tooltip: {
-              backgroundColor: '#1e293b',
-              titleColor: '#f8fafc',
-              bodyColor: '#cbd5e1',
-              borderColor: '#334155',
-              borderWidth: 1,
-              padding: 12
-            }
-          },
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: parsedData.labelName,
-                color: '#94a3b8'
-              },
-              ticks: { color: '#94a3b8' },
-              grid: { color: '#334155' }
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Valore',
-                color: '#94a3b8'
-              },
-              ticks: { color: '#94a3b8' },
-              grid: { color: '#334155' }
-            }
-          }
+      // Inizializzazione automatica all'avvio della pagina
+      document.addEventListener('DOMContentLoaded', () => {
+        if (inputUrl.value.trim()) {
+          fetchAndRender(inputUrl.value.trim());
         }
       });
-    }
-
-    // Carica automaticamente all'avvio
-    document.addEventListener('DOMContentLoaded', () => {
-      loadAndRenderChart(inputEl.value.trim());
-    });
+    })();
   </script>
 </body>
 </html>
