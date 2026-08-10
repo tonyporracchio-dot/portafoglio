@@ -2,7 +2,8 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- BLOCCO ZOOM MOBILE -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mio Patrimonio</title>
 
   <!-- PWA & Mobile Settings -->
@@ -21,10 +22,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-12">
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-12 select-none">
 
   <!-- BARRA SUPERIORE ESSENZIALE -->
-  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-2.5">
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-2.5 backdrop-blur-md">
     <div class="max-w-4xl mx-auto flex justify-between items-center">
       
       <!-- Titolo App -->
@@ -63,7 +64,7 @@
   <!-- CONTENUTO PRINCIPALE -->
   <main class="max-w-4xl mx-auto px-4 pt-6 space-y-6">
 
-    <!-- SCHEDE RIEPILOGO (RIORDINATE: PATRIMONIO -> LIQUIDITÀ -> TITOLI) -->
+    <!-- SCHEDE RIEPILOGO -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       
       <!-- 1. PATRIMONIO TOTALE -->
@@ -73,7 +74,7 @@
         <div id="daily-total-val" class="text-xs font-semibold mt-1 text-slate-400">Oggi: € 0,00 (0.00%)</div>
       </div>
 
-      <!-- 2. LIQUIDITÀ (SPOSTATA PRIMA DI VALORE TITOLI) -->
+      <!-- 2. LIQUIDITÀ -->
       <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
         <div class="flex justify-between items-center">
           <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Liquidità</span>
@@ -83,7 +84,7 @@
         <div id="cash-change-val" class="text-xs font-semibold mt-1 text-slate-400">Mese: € 0,00 (0.00%)</div>
       </div>
 
-      <!-- 3. VALORE TITOLI (CON VARIAZIONE GIORNALIERA) -->
+      <!-- 3. VALORE TITOLI -->
       <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
         <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Valore Titoli</span>
         <div id="invested-val" class="text-2xl font-bold text-blue-400 mt-1">€ 0,00</div>
@@ -93,7 +94,7 @@
 
     </div>
 
-    <!-- LISTA TITOLI IN PORTAFOGLIO -->
+    <!-- LISTA TITOLI IN PORTAFOGLIO (LAYOUT A 2 RIGHE SENZA SCROLL) -->
     <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl shadow-sm overflow-hidden">
       
       <!-- HEADING SCHEDA CON PULSANTI -->
@@ -125,32 +126,15 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm text-slate-300">
-          <thead class="bg-slate-900/40 text-[11px] uppercase text-slate-400 border-b border-slate-700/60">
-            <tr>
-              <th class="py-2.5 px-4">Titolo</th>
-              <th class="py-2.5 px-4 text-right">Quantità</th>
-              <th class="py-2.5 px-4 text-right">Prezzo Med.</th>
-              <th class="py-2.5 px-4 text-right">Prezzo Att.</th>
-              <th class="py-2.5 px-4 text-right">Valore</th>
-              <th class="py-2.5 px-4 text-right">Var. Oggi</th>
-              <th class="py-2.5 px-4 text-right">Rendimento Tot.</th>
-              <th class="py-2.5 px-4 text-center">Azione</th>
-            </tr>
-          </thead>
-          <tbody id="assets-table-body" class="divide-y divide-slate-700/40">
-            <tr>
-              <td colspan="8" class="py-8 text-center text-slate-500 text-xs">
-                Caricamento dati in corso...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- CONTENITORE TITOLI A 2 RIGHE -->
+      <div id="assets-list-body" class="divide-y divide-slate-700/50">
+        <div class="py-8 text-center text-slate-500 text-xs">
+          Caricamento dati in corso...
+        </div>
       </div>
     </div>
 
-    <!-- SEZIONE WATCHLIST (TITOLI DA OSSERVARE) -->
+    <!-- SEZIONE WATCHLIST -->
     <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl shadow-sm overflow-hidden mt-6">
       <div class="px-4 py-3 border-b border-slate-700/60 flex justify-between items-center">
         <div class="flex items-center gap-2">
@@ -168,24 +152,10 @@
         </button>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm text-slate-300">
-          <thead class="bg-slate-900/40 text-[11px] uppercase text-slate-400 border-b border-slate-700/60">
-            <tr>
-              <th class="py-2.5 px-4">Titolo</th>
-              <th class="py-2.5 px-4 text-right">Prezzo Attuale</th>
-              <th class="py-2.5 px-4 text-right">Var. Oggi</th>
-              <th class="py-2.5 px-4 text-center">Azione</th>
-            </tr>
-          </thead>
-          <tbody id="watchlist-table-body" class="divide-y divide-slate-700/40">
-            <tr>
-              <td colspan="4" class="py-6 text-center text-slate-500 text-xs">
-                Nessun titolo in watchlist.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div id="watchlist-list-body" class="divide-y divide-slate-700/50">
+        <div class="py-6 text-center text-slate-500 text-xs">
+          Nessun titolo in watchlist.
+        </div>
       </div>
     </div>
 
@@ -201,8 +171,13 @@
 
       <form id="form-add-asset" onsubmit="saveAsset(event)" class="space-y-3">
         <div>
-          <label class="block text-xs text-slate-400 mb-1">Nome / Ticker (es. SWDA.MI, AAPL)</label>
-          <input type="text" id="asset-name" placeholder="es. SWDA.MI" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs text-slate-400 mb-1">Ticker Yahoo Finance (es. SWDA.MI, AAPL)</label>
+          <input type="text" id="asset-ticker" placeholder="es. SWDA.MI" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Nome Personalizzato (Opzionale, es. World ETF)</label>
+          <input type="text" id="asset-name" placeholder="es. iShares MSCI World" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -245,8 +220,13 @@
 
       <form id="form-add-watchlist" onsubmit="saveWatchlistAsset(event)" class="space-y-3">
         <div>
-          <label class="block text-xs text-slate-400 mb-1">Nome / Ticker (es. NVDA, TSLA)</label>
-          <input type="text" id="watchlist-name" placeholder="es. NVDA" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs text-slate-400 mb-1">Ticker Yahoo Finance (es. NVDA, TSLA)</label>
+          <input type="text" id="watchlist-ticker" placeholder="es. NVDA" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Nome Personalizzato (Opzionale)</label>
+          <input type="text" id="watchlist-name" placeholder="es. Nvidia Corp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -309,21 +289,31 @@
 
       const rawAssets = raw.assets || raw.portafoglio || [];
       if (Array.isArray(rawAssets)) {
-        assets = rawAssets.map(item => ({
-          name: item.name || item.nome || item.ticker || 'Titolo',
-          qty: parseFloat(item.qty || item.quantita || 0),
-          buyPrice: parseFloat(item.buyPrice || item.pmc || item.prezzo || 0),
-          currPrice: parseFloat(item.currPrice || item.prezzo || item.pmc || 0),
-          dailyChange: parseFloat(item.dailyChange ?? item.changePercent ?? 0)
-        }));
+        assets = rawAssets.map(item => {
+          const ticker = (item.ticker || item.symbol || item.name || item.nome || '').trim().toUpperCase();
+          const name = (item.name || item.displayName || item.customName || ticker).trim();
+          return {
+            ticker: ticker || 'TITOLO',
+            name: name || ticker || 'Titolo',
+            qty: parseFloat(item.qty || item.quantita || 0),
+            buyPrice: parseFloat(item.buyPrice || item.pmc || item.prezzo || 0),
+            currPrice: parseFloat(item.currPrice || item.prezzo || item.pmc || 0),
+            dailyChange: parseFloat(item.dailyChange ?? item.changePercent ?? 0)
+          };
+        });
       }
 
       if (Array.isArray(raw.watchlist)) {
-        watchlist = raw.watchlist.map(item => ({
-          name: item.name || item.nome || item.ticker || 'Titolo',
-          currPrice: parseFloat(item.currPrice || item.prezzo || 0),
-          dailyChange: parseFloat(item.dailyChange ?? item.changePercent ?? 0)
-        }));
+        watchlist = raw.watchlist.map(item => {
+          const ticker = (item.ticker || item.symbol || item.name || '').trim().toUpperCase();
+          const name = (item.name || item.customName || ticker).trim();
+          return {
+            ticker: ticker || 'TITOLO',
+            name: name || ticker || 'Titolo',
+            currPrice: parseFloat(item.currPrice || item.prezzo || 0),
+            dailyChange: parseFloat(item.dailyChange ?? item.changePercent ?? 0)
+          };
+        });
       }
 
       if (typeof raw.cash === 'number') {
@@ -449,7 +439,7 @@
       }
     }
 
-    // CHIAMATA API PER AGGIORNARE SIA PORTAFOGLIO CHE WATCHLIST
+    // CHIAMATA API A RENDER TRAMITE TICKER
     async function fetchPricesFromProxy() {
       const allAssets = portfolioData.assets || [];
       const allWatchlist = portfolioData.watchlist || [];
@@ -466,8 +456,8 @@
       if (refreshLabel) refreshLabel.innerText = "Connessione...";
 
       const tickerSet = new Set([
-        ...allAssets.map(a => a.name.trim()),
-        ...allWatchlist.map(w => w.name.trim())
+        ...allAssets.map(a => (a.ticker || a.name).trim().toUpperCase()),
+        ...allWatchlist.map(w => (w.ticker || w.name).trim().toUpperCase())
       ]);
       const tickers = Array.from(tickerSet).filter(Boolean).join(',');
       const url = `https://proxy-stocks-prices.onrender.com/price?symbols=${encodeURIComponent(tickers)}`;
@@ -503,19 +493,17 @@
           if (!quote || !quote.symbol) return;
           const sym = quote.symbol.toUpperCase();
 
-          // Aggiorna Titoli in Portafoglio
           portfolioData.assets.forEach(a => {
-            if (a.name.trim().toUpperCase() === sym) {
+            if ((a.ticker || a.name).trim().toUpperCase() === sym) {
               if (typeof quote.price === 'number' && quote.price > 0) a.currPrice = quote.price;
               if (typeof quote.changePercent === 'number') a.dailyChange = quote.changePercent;
               updatedCount++;
             }
           });
 
-          // Aggiorna Titoli in Watchlist
           if (portfolioData.watchlist) {
             portfolioData.watchlist.forEach(w => {
-              if (w.name.trim().toUpperCase() === sym) {
+              if ((w.ticker || w.name).trim().toUpperCase() === sym) {
                 if (typeof quote.price === 'number' && quote.price > 0) w.currPrice = quote.price;
                 if (typeof quote.changePercent === 'number') w.dailyChange = quote.changePercent;
                 updatedCount++;
@@ -581,7 +569,7 @@
       safeSetClass('cash-change-val', `text-xs font-semibold mt-1 ${isCashPos ? 'text-emerald-400' : 'text-rose-400'}`);
       safeSetText('cash-change-val', `Mese: ${isCashPos ? '+' : ''}${formatEUR(cashDiff)} (${isCashPos ? '+' : ''}${cashDiffPerc.toFixed(2)}%)`);
 
-      // 3. Valore Titoli (Prezzo Totale + Var. Giornaliera + Rendimento Totale)
+      // 3. Valore Titoli
       safeSetText('invested-val', formatEUR(totalInvestedVal));
       
       const prevInvestedVal = totalInvestedVal - totalDailyGainLoss;
@@ -593,21 +581,23 @@
       safeSetClass('gain-loss-val', `text-xs font-semibold text-slate-400`);
       safeSetText('gain-loss-val', `Totale: ${isPos ? '+' : ''}${formatEUR(totalProfit)} (${totalProfitPerc.toFixed(2)}%)`);
 
-      renderTable();
-      renderWatchlistTable();
+      renderList();
+      renderWatchlistList();
     }
 
-    function renderTable() {
-      const tbody = document.getElementById('assets-table-body');
-      if (!tbody) return;
+    // RENDERING TITOLI SU 2 RIGHE SENZA SCROLLING
+    function renderList() {
+      const container = document.getElementById('assets-list-body');
+      if (!container) return;
 
       if (portfolioData.assets.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Nessun titolo in portafoglio. Clicca su "+ Aggiungi" per iniziare.</td></tr>`;
+        container.innerHTML = `<div class="py-8 text-center text-slate-500 text-xs">Nessun titolo in portafoglio. Clicca su "+ Aggiungi" per iniziare.</div>`;
         return;
       }
 
-      tbody.innerHTML = portfolioData.assets.map((item, index) => {
-        const name = item.name || 'Titolo';
+      container.innerHTML = portfolioData.assets.map((item, index) => {
+        const name = item.name || item.ticker || 'Titolo';
+        const ticker = (item.ticker || item.name || '').toUpperCase();
         const qty = item.qty || 0;
         const buyPrice = item.buyPrice || 0;
         const currPrice = item.currPrice || buyPrice;
@@ -622,82 +612,116 @@
         const isDailyPos = dailyPerc >= 0;
 
         return `
-          <tr class="hover:bg-slate-800/30 transition-colors">
-            <td class="py-2.5 px-4 font-medium text-white text-xs">${name}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${qty}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${formatEUR(buyPrice)}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${formatEUR(currPrice)}</td>
-            <td class="py-2.5 px-4 text-right font-medium text-white text-xs">${formatEUR(val)}</td>
-            
-            <td class="py-2.5 px-4 text-right font-medium text-xs ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
-              ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
-            </td>
+          <div class="p-3.5 hover:bg-slate-800/40 transition-colors space-y-2">
+            <!-- RIGA 1: NOME, TICKER, VALORE, RENDIMENTO TOTALE E AZIONI -->
+            <div class="flex justify-between items-start gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="font-semibold text-white text-sm leading-tight truncate">${name}</div>
+                <div class="text-[11px] text-slate-400 font-mono mt-0.5">${ticker}</div>
+              </div>
 
-            <td class="py-2.5 px-4 text-right font-medium text-xs ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
-              ${isPos ? '+' : ''}${formatEUR(profit)} (${profitPerc.toFixed(2)}%)
-            </td>
+              <div class="text-right flex items-start gap-2.5">
+                <div>
+                  <div class="font-bold text-white text-sm leading-tight">${formatEUR(val)}</div>
+                  <div class="text-[11px] font-medium mt-0.5 ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
+                    Tot: ${isPos ? '+' : ''}${formatEUR(profit)} (${profitPerc.toFixed(2)}%)
+                  </div>
+                </div>
 
-            <td class="py-2.5 px-4 text-center flex justify-center gap-1">
-              <button onclick="editAsset(${index})" class="text-slate-500 hover:text-blue-400 p-1 transition-colors" title="Modifica tutti i parametri (Quote, Prezzo, ecc.)">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
-                </svg>
-              </button>
-              <button onclick="deleteAsset(${index})" class="text-slate-600 hover:text-rose-400 p-1 transition-colors" title="Elimina">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </td>
-          </tr>
+                <div class="flex items-center gap-0.5">
+                  <button onclick="editAsset(${index})" class="text-slate-400 hover:text-blue-400 p-1 transition-colors" title="Modifica">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button onclick="deleteAsset(${index})" class="text-slate-500 hover:text-rose-400 p-1 transition-colors" title="Elimina">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGA 2: QTA, P.MEDIO, P.ATTUALE, VARIAZIONE OGGI -->
+            <div class="grid grid-cols-4 gap-1 text-[11px] pt-1.5 border-t border-slate-700/40 text-slate-300">
+              <div>
+                <span class="text-slate-500 block text-[10px] uppercase">Q.tà</span>
+                <span class="font-medium">${qty}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block text-[10px] uppercase">P. Medio</span>
+                <span class="font-medium">${formatEUR(buyPrice)}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block text-[10px] uppercase">P. Attuale</span>
+                <span class="font-medium">${formatEUR(currPrice)}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-slate-500 block text-[10px] uppercase">Var. Oggi</span>
+                <span class="font-semibold ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
+                  ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
+                </span>
+              </div>
+            </div>
+          </div>
         `;
       }).join('');
     }
 
-    function renderWatchlistTable() {
-      const tbody = document.getElementById('watchlist-table-body');
-      if (!tbody) return;
+    // RENDERING WATCHLIST SU 2 RIGHE
+    function renderWatchlistList() {
+      const container = document.getElementById('watchlist-list-body');
+      if (!container) return;
 
       const watchlist = portfolioData.watchlist || [];
 
       if (watchlist.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-500 text-xs">Nessun titolo in watchlist. Clicca su "+ Aggiungi a Watchlist" per monitorare un titolo.</td></tr>`;
+        container.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">Nessun titolo in watchlist. Clicca su "+ Aggiungi a Watchlist" per monitorare un titolo.</div>`;
         return;
       }
 
-      tbody.innerHTML = watchlist.map((item, index) => {
-        const name = item.name || 'Titolo';
+      container.innerHTML = watchlist.map((item, index) => {
+        const name = item.name || item.ticker || 'Titolo';
+        const ticker = (item.ticker || item.name || '').toUpperCase();
         const currPrice = item.currPrice || 0;
         const dailyPerc = item.dailyChange || 0;
         const isDailyPos = dailyPerc >= 0;
 
         return `
-          <tr class="hover:bg-slate-800/30 transition-colors">
-            <td class="py-2.5 px-4 font-medium text-white text-xs">${name}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${formatEUR(currPrice)}</td>
-            
-            <td class="py-2.5 px-4 text-right font-medium text-xs ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
-              ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
-            </td>
+          <div class="p-3 hover:bg-slate-800/40 transition-colors flex justify-between items-center gap-2">
+            <div class="min-w-0 flex-1">
+              <div class="font-semibold text-white text-xs truncate">${name}</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">${ticker}</div>
+            </div>
 
-            <td class="py-2.5 px-4 text-center flex justify-center gap-1">
-              <button onclick="editWatchlistAsset(${index})" class="text-slate-500 hover:text-blue-400 p-1 transition-colors" title="Modifica">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
-                </svg>
-              </button>
-              <button onclick="deleteWatchlistAsset(${index})" class="text-slate-600 hover:text-rose-400 p-1 transition-colors" title="Elimina">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </td>
-          </tr>
+            <div class="flex items-center gap-3">
+              <div class="text-right">
+                <div class="font-medium text-white text-xs">${formatEUR(currPrice)}</div>
+                <div class="text-[11px] font-semibold ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
+                  ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
+                </div>
+              </div>
+
+              <div class="flex items-center gap-0.5">
+                <button onclick="editWatchlistAsset(${index})" class="text-slate-400 hover:text-blue-400 p-1 transition-colors" title="Modifica">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
+                <button onclick="deleteWatchlistAsset(${index})" class="text-slate-500 hover:text-rose-400 p-1 transition-colors" title="Elimina">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         `;
       }).join('');
     }
 
-    // GESTIONE MODALI
+    // MODALI
     function openModal() {
       const modal = document.getElementById('modal-add');
       if (modal) modal.classList.remove('hidden');
@@ -722,18 +746,21 @@
       if (form) form.reset();
     }
 
-    // SALVATAGGIO TITOLO PORTAFOGLIO
+    // SALVATAGGIO NUOVO TITOLO
     function saveAsset(e) {
       e.preventDefault();
-      const name = document.getElementById('asset-name').value.trim();
+      const ticker = document.getElementById('asset-ticker').value.trim().toUpperCase();
+      let name = document.getElementById('asset-name').value.trim();
+      if (!name) name = ticker;
+
       const qty = parseFloat(document.getElementById('asset-qty').value);
       const buyPrice = parseFloat(document.getElementById('asset-buy-price').value);
       const currPrice = parseFloat(document.getElementById('asset-curr-price').value);
       const dailyChange = parseFloat(document.getElementById('asset-daily-change').value) || 0;
 
-      if (!name || isNaN(qty) || isNaN(buyPrice) || isNaN(currPrice)) return;
+      if (!ticker || isNaN(qty) || isNaN(buyPrice) || isNaN(currPrice)) return;
 
-      portfolioData.assets.push({ name, qty, buyPrice, currPrice, dailyChange });
+      portfolioData.assets.push({ ticker, name, qty, buyPrice, currPrice, dailyChange });
       saveUserData();
       closeModal();
       updateUI();
@@ -742,35 +769,43 @@
     // SALVATAGGIO WATCHLIST
     function saveWatchlistAsset(e) {
       e.preventDefault();
-      const name = document.getElementById('watchlist-name').value.trim();
+      const ticker = document.getElementById('watchlist-ticker').value.trim().toUpperCase();
+      let name = document.getElementById('watchlist-name').value.trim();
+      if (!name) name = ticker;
+
       const currPrice = parseFloat(document.getElementById('watchlist-curr-price').value);
       const dailyChange = parseFloat(document.getElementById('watchlist-daily-change').value) || 0;
 
-      if (!name || isNaN(currPrice)) return;
+      if (!ticker || isNaN(currPrice)) return;
 
       if (!portfolioData.watchlist) portfolioData.watchlist = [];
-      portfolioData.watchlist.push({ name, currPrice, dailyChange });
+      portfolioData.watchlist.push({ ticker, name, currPrice, dailyChange });
       
       saveUserData();
       closeWatchlistModal();
       updateUI();
     }
 
-    // MODIFICA COMPLETA TITOLO (COMPRESO NUMERO DI QUOTE)
+    // MODIFICA TITOLO IN PORTAFOGLIO
     function editAsset(index) {
       const asset = portfolioData.assets[index];
-      const name = asset.name || 'Titolo';
 
-      const newQtyStr = prompt(`Nuova QUANTITÀ (quote) per ${name}:`, asset.qty || 0);
+      const newName = prompt(`NOME PERSONALIZZATO per il titolo:`, asset.name || asset.ticker);
+      if (newName === null) return;
+
+      const newTicker = prompt(`TICKER Yahoo Finance per scaricare il prezzo:`, asset.ticker || asset.name);
+      if (newTicker === null) return;
+
+      const newQtyStr = prompt(`QUANTITÀ (quote):`, asset.qty || 0);
       if (newQtyStr === null) return;
 
-      const newBuyPriceStr = prompt(`Nuovo PREZZO MEDIO d'acquisto (€) per ${name}:`, asset.buyPrice || 0);
+      const newBuyPriceStr = prompt(`PREZZO MEDIO d'acquisto (€):`, asset.buyPrice || 0);
       if (newBuyPriceStr === null) return;
       
-      const newCurrPriceStr = prompt(`Nuovo PREZZO ATTUALE (€) per ${name}:`, asset.currPrice || 0);
+      const newCurrPriceStr = prompt(`PREZZO ATTUALE (€):`, asset.currPrice || 0);
       if (newCurrPriceStr === null) return;
       
-      const newDailyChangeStr = prompt(`Nuova VARIAZIONE GIORNALIERA (%) per ${name}:`, asset.dailyChange || 0);
+      const newDailyChangeStr = prompt(`VARIAZIONE GIORNALIERA (%):`, asset.dailyChange || 0);
       if (newDailyChangeStr === null) return;
 
       const qVal = parseFloat(newQtyStr);
@@ -779,6 +814,8 @@
       const dVal = parseFloat(newDailyChangeStr);
 
       if (!isNaN(qVal) && !isNaN(bVal) && !isNaN(pVal) && !isNaN(dVal)) {
+        portfolioData.assets[index].name = newName.trim() || newTicker.trim().toUpperCase();
+        portfolioData.assets[index].ticker = newTicker.trim().toUpperCase();
         portfolioData.assets[index].qty = qVal;
         portfolioData.assets[index].buyPrice = bVal;
         portfolioData.assets[index].currPrice = pVal;
@@ -788,21 +825,28 @@
       }
     }
 
-    // MODIFICA WATCHLIST
+    // MODIFICA TITOLO WATCHLIST
     function editWatchlistAsset(index) {
       const item = portfolioData.watchlist[index];
-      const name = item.name || 'Titolo';
 
-      const newCurrPriceStr = prompt(`Nuovo PREZZO ATTUALE (€) per ${name}:`, item.currPrice || 0);
+      const newName = prompt(`NOME PERSONALIZZATO per il titolo:`, item.name || item.ticker);
+      if (newName === null) return;
+
+      const newTicker = prompt(`TICKER Yahoo Finance:`, item.ticker || item.name);
+      if (newTicker === null) return;
+
+      const newCurrPriceStr = prompt(`PREZZO ATTUALE (€):`, item.currPrice || 0);
       if (newCurrPriceStr === null) return;
       
-      const newDailyChangeStr = prompt(`Nuova VARIAZIONE GIORNALIERA (%) per ${name}:`, item.dailyChange || 0);
+      const newDailyChangeStr = prompt(`VARIAZIONE GIORNALIERA (%):`, item.dailyChange || 0);
       if (newDailyChangeStr === null) return;
 
       const pVal = parseFloat(newCurrPriceStr);
       const dVal = parseFloat(newDailyChangeStr);
 
       if (!isNaN(pVal) && !isNaN(dVal)) {
+        portfolioData.watchlist[index].name = newName.trim() || newTicker.trim().toUpperCase();
+        portfolioData.watchlist[index].ticker = newTicker.trim().toUpperCase();
         portfolioData.watchlist[index].currPrice = pVal;
         portfolioData.watchlist[index].dailyChange = dVal;
         saveUserData();
