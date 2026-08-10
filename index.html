@@ -119,6 +119,23 @@
             <button onclick="setWidgetTimeframe('cash', '5Y')" class="tf-btn-cash px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium" data-tf="5Y">5Y</button>
             <button onclick="setWidgetTimeframe('cash', 'MAX')" class="tf-btn-cash px-1.5 py-0.5 rounded hover:text-white text-slate-400 font-medium text-emerald-400" data-tf="MAX">MAX</button>
           </div>
+
+          <!-- Sezione per l'inserimento manuale dei dati storici del Widget 2 -->
+<div class="storico-input-container" style="margin-top: 15px; padding: 10px; border-top: 1px solid #ccc;">
+  <h4 style="margin-bottom: 10px;">Aggiungi Dato Storico</h4>
+  
+  <div style="margin-bottom: 5px;">
+    <label for="mese-widget2">Mese:</label>
+    <input type="month" id="mese-widget2" required>
+  </div>
+  
+  <div style="margin-bottom: 10px;">
+    <label for="valore-widget2">Valore:</label>
+    <input type="number" id="valore-widget2" step="0.01" placeholder="Es. 1500.50" required>
+  </div>
+  
+  <button onclick="salvaStoricoWidget2()">Salva Dato</button>
+</div>
         </div>
         <!-- Grafico Sfondo -->
         <div class="h-28 w-full mt-3 z-0">
