@@ -152,15 +152,17 @@
 
   </main>
 
-  <!-- MODALE AGGIUNGI TITOLO -->
+  <!-- MODALE AGGIUNGI / MODIFICA TITOLO -->
   <div id="modal-add" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4">
       <div class="flex justify-between items-center">
-        <h3 class="text-sm font-semibold text-white">Aggiungi titolo in portafoglio</h3>
+        <h3 id="modal-title" class="text-sm font-semibold text-white">Aggiungi titolo in portafoglio</h3>
         <button onclick="closeModal()" class="text-slate-400 hover:text-white">&times;</button>
       </div>
 
       <form id="form-add-asset" onsubmit="saveAsset(event)" class="space-y-3">
+        <input type="hidden" id="editing-index" value="-1">
+
         <div>
           <label class="block text-xs text-slate-400 mb-1">Ticker Yahoo Finance (es. SWDA.MI, AAPL)</label>
           <input type="text" id="asset-ticker" placeholder="es. SWDA.MI" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
@@ -173,23 +175,12 @@
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Quantità</label>
+            <label class="block text-xs text-slate-400 mb-1">Quantità (Quote)</label>
             <input type="number" step="any" id="asset-qty" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Prezzo Med. (€ - 3 decimali)</label>
-            <input type="number" step="0.001" id="asset-buy-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Prezzo Attuale (€)</label>
-            <input type="number" step="any" id="asset-curr-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Var. Giornaliera (%)</label>
-            <input type="number" step="any" id="asset-daily-change" placeholder="es. +1.25" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs text-slate-400 mb-1">PMC / Prezzo Medio (€)</label>
+            <input type="number" step="0.001" id="asset-buy-price" required placeholder="es. 85.123" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
           </div>
         </div>
 
@@ -218,17 +209,6 @@
         <div>
           <label class="block text-xs text-slate-400 mb-1">Nome Personalizzato (Opzionale)</label>
           <input type="text" id="watchlist-name" placeholder="es. Nvidia Corp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Prezzo Attuale (€)</label>
-            <input type="number" step="any" id="watchlist-curr-price" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Var. Giornaliera (%)</label>
-            <input type="number" step="any" id="watchlist-daily-change" placeholder="es. +0.50" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
-          </div>
         </div>
 
         <div class="flex justify-end gap-2 pt-2">
@@ -270,7 +250,6 @@
       if (el) el.className = className;
     }
 
-    // FORMATTAZIONE EURO CORRETTA (SOPRATTUTTO PER I 3 DECIMALI FISSI DEL PREZZO MEDIO)
     function formatEUR(val, minDigits = 2, maxDigits = 2) {
       return new Intl.NumberFormat('it-IT', { 
         style: 'currency', 
@@ -293,12 +272,14 @@
         assets = rawAssets.map(item => {
           const ticker = (item.ticker || item.symbol || item.name || item.nome || '').trim().toUpperCase();
           const name = (item.name || item.displayName || item.customName || ticker).trim();
+          const buyPrice = parseFloat(item.buyPrice || item.pmc || item.prezzo || 0);
+          const currPrice = item.currPrice !== undefined ? parseFloat(item.currPrice) : buyPrice;
           return {
             ticker: ticker || 'TITOLO',
             name: name || ticker || 'Titolo',
             qty: parseFloat(item.qty || item.quantita || 0),
-            buyPrice: parseFloat(item.buyPrice || item.pmc || item.prezzo || 0),
-            currPrice: parseFloat(item.currPrice || item.prezzo || item.pmc || 0),
+            buyPrice: buyPrice,
+            currPrice: currPrice || buyPrice,
             dailyChange: parseFloat(item.dailyChange ?? item.changePercent ?? 0)
           };
         });
@@ -331,11 +312,7 @@
         cash = raw.storicoLiquidita;
       }
 
-      if (typeof raw.prevCash === 'number') {
-        prevCash = raw.prevCash;
-      } else {
-        prevCash = cash;
-      }
+      prevCash = typeof raw.prevCash === 'number' ? raw.prevCash : cash;
 
       return { assets, cash, prevCash, watchlist };
     }
@@ -533,17 +510,17 @@
 
       portfolioData.assets.forEach(a => {
         const qty = a.qty || 0;
-        const currPrice = a.currPrice || 0;
         const buyPrice = a.buyPrice || 0;
+        const currPrice = a.currPrice || buyPrice;
 
         const val = qty * currPrice;
         totalInvestedVal += val;
         totalCostVal += (qty * buyPrice);
 
-        // CALCOLO CORRETTO VARIAZIONE GIORNALIERA SULLE SINGOLE QUOTE
+        // CALCOLO RIGOROSO VARIAZIONE GIORNALIERA PATRIMONIALE
         const dailyPerc = a.dailyChange || 0;
-        const prevPrice = dailyPerc !== 0 ? currPrice / (1 + (dailyPerc / 100)) : currPrice;
-        const assetDailyEuro = (currPrice - prevPrice) * qty;
+        const prevVal = dailyPerc !== 0 ? val / (1 + (dailyPerc / 100)) : val;
+        const assetDailyEuro = val - prevVal;
         totalDailyGainLoss += assetDailyEuro;
       });
 
@@ -587,7 +564,7 @@
       renderWatchlistList();
     }
 
-    // RENDERING SCHEDA TITOLI A CARD PULITE
+    // RENDERING CARDS TITOLI
     function renderList() {
       const container = document.getElementById('assets-list-body');
       if (!container) return;
@@ -611,8 +588,8 @@
         const isPos = profit >= 0;
 
         const dailyPerc = item.dailyChange || 0;
-        const prevPrice = dailyPerc !== 0 ? currPrice / (1 + (dailyPerc / 100)) : currPrice;
-        const dailyEuro = (currPrice - prevPrice) * qty;
+        const prevVal = dailyPerc !== 0 ? val / (1 + (dailyPerc / 100)) : val;
+        const dailyEuro = val - prevVal;
         const isDailyPos = dailyEuro >= 0;
 
         return `
@@ -625,7 +602,7 @@
                 <div class="text-[11px] text-blue-400 font-mono font-medium mt-0.5">${ticker}</div>
               </div>
               <div class="flex items-center gap-1 bg-slate-800 px-1.5 py-1 rounded border border-slate-700/60">
-                <button onclick="editAsset(${index})" class="text-slate-400 hover:text-blue-400 p-0.5" title="Modifica">
+                <button onclick="editAsset(${index})" class="text-slate-400 hover:text-blue-400 p-0.5" title="Modifica PMC e Dati">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
                   </svg>
@@ -648,7 +625,7 @@
               <div class="bg-slate-800/40 p-2 rounded border border-slate-700/30">
                 <span class="text-slate-400 text-[10px] block uppercase">Investito</span>
                 <span class="font-semibold text-slate-200 text-sm">${formatEUR(cost)}</span>
-                <span class="text-[10px] text-slate-400 block mt-0.5">PMC: <strong class="text-slate-300 font-medium">${formatEUR(buyPrice, 3, 3)}</strong> (${qty} qte)</span>
+                <span class="text-[10px] text-slate-400 block mt-0.5">PMC: <strong class="text-blue-300 font-medium">${formatEUR(buyPrice, 3, 3)}</strong> (${qty} qte)</span>
               </div>
             </div>
 
@@ -673,7 +650,7 @@
       }).join('');
     }
 
-    // RENDERING WATCHLIST SU SINGOLA RIGA COMPATTA
+    // RENDERING WATCHLIST SU RIGHE SINGOLE
     function renderWatchlistList() {
       const container = document.getElementById('watchlist-list-body');
       if (!container) return;
@@ -691,19 +668,15 @@
         const currPrice = item.currPrice || 0;
         const dailyPerc = item.dailyChange || 0;
         
-        const prevPrice = dailyPerc !== 0 ? currPrice / (1 + (dailyPerc / 100)) : currPrice;
-        const dailyEuro = currPrice - prevPrice;
-        const isDailyPos = dailyEuro >= 0;
+        const isDailyPos = dailyPerc >= 0;
 
         return `
           <div class="px-4 py-2.5 hover:bg-slate-800/40 transition-colors flex justify-between items-center gap-2">
-            <!-- COLONNA 1: NOME & TICKER -->
             <div class="min-w-0 flex-1 flex items-center gap-2">
               <span class="font-mono text-[10px] text-blue-400 bg-blue-950/60 border border-blue-800/40 px-1.5 py-0.5 rounded font-semibold">${ticker}</span>
               <span class="font-medium text-white text-xs truncate">${name}</span>
             </div>
 
-            <!-- COLONNA 2: PREZZO, VARIAZIONE E AZIONI SU UNICA RIGA -->
             <div class="flex items-center gap-3">
               <div class="text-right">
                 <span class="font-semibold text-white text-xs">${formatEUR(currPrice)}</span>
@@ -713,11 +686,6 @@
               </div>
 
               <div class="flex items-center gap-0.5 border-l border-slate-700/50 pl-1.5">
-                <button onclick="editWatchlistAsset(${index})" class="text-slate-400 hover:text-blue-400 p-1" title="Modifica">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
                 <button onclick="deleteWatchlistAsset(${index})" class="text-slate-500 hover:text-rose-400 p-1" title="Elimina">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -730,8 +698,26 @@
       }).join('');
     }
 
-    // MODALI
+    // GESTIONE MODALE AGGIUNTA / MODIFICA
     function openModal() {
+      document.getElementById('modal-title').innerText = "Aggiungi titolo in portafoglio";
+      document.getElementById('editing-index').value = "-1";
+      document.getElementById('form-add-asset').reset();
+      const modal = document.getElementById('modal-add');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function editAsset(index) {
+      const asset = portfolioData.assets[index];
+      if (!asset) return;
+
+      document.getElementById('modal-title').innerText = "Modifica Titolo & PMC";
+      document.getElementById('editing-index').value = index;
+      document.getElementById('asset-ticker').value = asset.ticker || '';
+      document.getElementById('asset-name').value = asset.name || '';
+      document.getElementById('asset-qty').value = asset.qty || '';
+      document.getElementById('asset-buy-price').value = asset.buyPrice || '';
+
       const modal = document.getElementById('modal-add');
       if (modal) modal.classList.remove('hidden');
     }
@@ -755,21 +741,44 @@
       if (form) form.reset();
     }
 
-    // SALVATAGGIO NUOVO TITOLO
+    // SALVATAGGIO TITOLO (INSERIMENTO O EDITA PMC)
     function saveAsset(e) {
       e.preventDefault();
+      const editingIndex = parseInt(document.getElementById('editing-index').value, 10);
+      
       const ticker = document.getElementById('asset-ticker').value.trim().toUpperCase();
       let name = document.getElementById('asset-name').value.trim();
       if (!name) name = ticker;
 
       const qty = parseFloat(document.getElementById('asset-qty').value);
       const buyPrice = parseFloat(document.getElementById('asset-buy-price').value);
-      const currPrice = parseFloat(document.getElementById('asset-curr-price').value);
-      const dailyChange = parseFloat(document.getElementById('asset-daily-change').value) || 0;
 
-      if (!ticker || isNaN(qty) || isNaN(buyPrice) || isNaN(currPrice)) return;
+      if (!ticker || isNaN(qty) || isNaN(buyPrice)) return;
 
-      portfolioData.assets.push({ ticker, name, qty, buyPrice, currPrice, dailyChange });
+      if (editingIndex >= 0 && portfolioData.assets[editingIndex]) {
+        // Modifica titolo esistente (Aggiornamento PMC)
+        const oldCurrPrice = portfolioData.assets[editingIndex].currPrice;
+        portfolioData.assets[editingIndex].ticker = ticker;
+        portfolioData.assets[editingIndex].name = name;
+        portfolioData.assets[editingIndex].qty = qty;
+        portfolioData.assets[editingIndex].buyPrice = buyPrice;
+        
+        // Se il prezzo attuale non era ancora stato scaricato, lo allineiamo al nuovo PMC
+        if (!oldCurrPrice) {
+          portfolioData.assets[editingIndex].currPrice = buyPrice;
+        }
+      } else {
+        // Nuovo Inserimento: Prezzo attuale parte uguale al PMC
+        portfolioData.assets.push({ 
+          ticker, 
+          name, 
+          qty, 
+          buyPrice, 
+          currPrice: buyPrice, 
+          dailyChange: 0 
+        });
+      }
+
       saveUserData();
       closeModal();
       updateUI();
@@ -782,85 +791,14 @@
       let name = document.getElementById('watchlist-name').value.trim();
       if (!name) name = ticker;
 
-      const currPrice = parseFloat(document.getElementById('watchlist-curr-price').value);
-      const dailyChange = parseFloat(document.getElementById('watchlist-daily-change').value) || 0;
-
-      if (!ticker || isNaN(currPrice)) return;
+      if (!ticker) return;
 
       if (!portfolioData.watchlist) portfolioData.watchlist = [];
-      portfolioData.watchlist.push({ ticker, name, currPrice, dailyChange });
+      portfolioData.watchlist.push({ ticker, name, currPrice: 0, dailyChange: 0 });
       
       saveUserData();
       closeWatchlistModal();
       updateUI();
-    }
-
-    // MODIFICA TITOLO IN PORTAFOGLIO
-    function editAsset(index) {
-      const asset = portfolioData.assets[index];
-
-      const newName = prompt(`NOME PERSONALIZZATO per il titolo:`, asset.name || asset.ticker);
-      if (newName === null) return;
-
-      const newTicker = prompt(`TICKER Yahoo Finance:`, asset.ticker || asset.name);
-      if (newTicker === null) return;
-
-      const newQtyStr = prompt(`QUANTITÀ (quote):`, asset.qty || 0);
-      if (newQtyStr === null) return;
-
-      const newBuyPriceStr = prompt(`PREZZO MEDIO d'acquisto (€ - supporta 3 decimali):`, asset.buyPrice || 0);
-      if (newBuyPriceStr === null) return;
-      
-      const newCurrPriceStr = prompt(`PREZZO ATTUALE (€):`, asset.currPrice || 0);
-      if (newCurrPriceStr === null) return;
-      
-      const newDailyChangeStr = prompt(`VARIAZIONE GIORNALIERA (%):`, asset.dailyChange || 0);
-      if (newDailyChangeStr === null) return;
-
-      const qVal = parseFloat(newQtyStr);
-      const bVal = parseFloat(newBuyPriceStr);
-      const pVal = parseFloat(newCurrPriceStr);
-      const dVal = parseFloat(newDailyChangeStr);
-
-      if (!isNaN(qVal) && !isNaN(bVal) && !isNaN(pVal) && !isNaN(dVal)) {
-        portfolioData.assets[index].name = newName.trim() || newTicker.trim().toUpperCase();
-        portfolioData.assets[index].ticker = newTicker.trim().toUpperCase();
-        portfolioData.assets[index].qty = qVal;
-        portfolioData.assets[index].buyPrice = bVal;
-        portfolioData.assets[index].currPrice = pVal;
-        portfolioData.assets[index].dailyChange = dVal;
-        saveUserData();
-        updateUI();
-      }
-    }
-
-    // MODIFICA WATCHLIST
-    function editWatchlistAsset(index) {
-      const item = portfolioData.watchlist[index];
-
-      const newName = prompt(`NOME PERSONALIZZATO:`, item.name || item.ticker);
-      if (newName === null) return;
-
-      const newTicker = prompt(`TICKER Yahoo Finance:`, item.ticker || item.name);
-      if (newTicker === null) return;
-
-      const newCurrPriceStr = prompt(`PREZZO ATTUALE (€):`, item.currPrice || 0);
-      if (newCurrPriceStr === null) return;
-      
-      const newDailyChangeStr = prompt(`VARIAZIONE GIORNALIERA (%):`, item.dailyChange || 0);
-      if (newDailyChangeStr === null) return;
-
-      const pVal = parseFloat(newCurrPriceStr);
-      const dVal = parseFloat(newDailyChangeStr);
-
-      if (!isNaN(pVal) && !isNaN(dVal)) {
-        portfolioData.watchlist[index].name = newName.trim() || newTicker.trim().toUpperCase();
-        portfolioData.watchlist[index].ticker = newTicker.trim().toUpperCase();
-        portfolioData.watchlist[index].currPrice = pVal;
-        portfolioData.watchlist[index].dailyChange = dVal;
-        saveUserData();
-        updateUI();
-      }
     }
 
     function deleteAsset(index) {
