@@ -178,13 +178,14 @@
   <!-- FIREBASE CONFIG & LOGICA -->
   <script>
     // Configurazione Firebase
-  const firebaseConfig = {
-      apiKey: "AIzaSyC-WrC9fbfOrYWl3F3c9JGtMujBRs5-nEo", 
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-WrC9fbfOrYWl3F3c9JGtMujBRs5-nEo",
       authDomain: "portafoglio-gemini.firebaseapp.com",
       projectId: "portafoglio-gemini",
       storageBucket: "portafoglio-gemini.firebasestorage.app",
       messagingSenderId: "190042969168",
-      appId: "1:190042969168:web:e60fe9fe7ea4a44b1e2d55"
+      appId: "1:190042969168:web:e60fe9fe7ea4a44b1e2d55",
+      measurementId: "G-5PWT8M9RD1"
     };
 
     if (!firebase.apps.length) {
@@ -196,21 +197,46 @@
     let currentUser = null;
     let portfolioData = { cash: 0, assets: [] };
 
+    // Helper sicuro per aggiornare elementi DOM
+    function safeSetText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = text;
+    }
+
+    function safeSetClass(id, className) {
+      const el = document.getElementById(id);
+      if (el) el.className = className;
+    }
+
     // Gestione stato Login
     auth.onAuthStateChanged((user) => {
       if (user) {
         currentUser = user;
-        document.getElementById('btn-login').classList.add('hidden');
-        document.getElementById('user-profile').classList.remove('hidden');
-        document.getElementById('user-photo').src = user.photoURL || '';
-        document.getElementById('btn-add-asset').classList.remove('hidden');
+        
+        const btnLogin = document.getElementById('btn-login');
+        if (btnLogin) btnLogin.classList.add('hidden');
+        
+        const userProfile = document.getElementById('user-profile');
+        if (userProfile) userProfile.classList.remove('hidden');
+        
+        const userPhoto = document.getElementById('user-photo');
+        if (userPhoto) userPhoto.src = user.photoURL || '';
+
+        const btnAddAsset = document.getElementById('btn-add-asset');
+        if (btnAddAsset) btnAddAsset.classList.remove('hidden');
         
         loadUserData();
       } else {
         currentUser = null;
-        document.getElementById('btn-login').classList.remove('hidden');
-        document.getElementById('user-profile').classList.add('hidden');
-        document.getElementById('btn-add-asset').classList.add('hidden');
+        
+        const btnLogin = document.getElementById('btn-login');
+        if (btnLogin) btnLogin.classList.remove('hidden');
+
+        const userProfile = document.getElementById('user-profile');
+        if (userProfile) userProfile.classList.add('hidden');
+
+        const btnAddAsset = document.getElementById('btn-add-asset');
+        if (btnAddAsset) btnAddAsset.classList.add('hidden');
         
         renderTable();
       }
@@ -230,8 +256,14 @@
 
       db.collection('portafogli_utenti').doc(currentUser.uid).onSnapshot((doc) => {
         if (doc.exists) {
-          portfolioData = doc.data();
-          if (!portfolioData.assets) portfolioData.assets = [];
+          const data = doc.data();
+          portfolioData = {
+            cash: data.cash || data.storicoLiquidita || 0,
+            assets: data.assets || data.portafoglio || []
+          };
+          if (Array.isArray(portfolioData.cash)) {
+            portfolioData.cash = portfolioData.cash.reduce((sum, item) => sum + (item.importo || 0), 0);
+          }
         } else {
           portfolioData = { cash: 0, assets: [] };
           saveUserData();
@@ -252,47 +284,47 @@
       let totalDailyGainLoss = 0;
 
       portfolioData.assets.forEach(a => {
-        const val = a.qty * a.currPrice;
+        const qty = a.qty || a.quantita || 0;
+        const currPrice = a.currPrice || a.prezzo || 0;
+        const buyPrice = a.buyPrice || a.pmc || 0;
+
+        const val = qty * currPrice;
         totalInvestedVal += val;
-        totalCostVal += (a.qty * a.buyPrice);
+        totalCostVal += (qty * buyPrice);
 
         const dailyPerc = a.dailyChange || 0;
-        // Calcolo del guadagno/perdita di oggi sul singolo titolo
-        const previousVal = val / (1 + (dailyPerc / 100));
-        const dailyGainLoss = val - previousVal;
-        totalDailyGainLoss += dailyGainLoss;
+        const previousVal = dailyPerc !== 0 ? val / (1 + (dailyPerc / 100)) : val;
+        totalDailyGainLoss += (val - previousVal);
       });
 
-      const totalCash = portfolioData.cash || 0;
+      const totalCash = typeof portfolioData.cash === 'number' ? portfolioData.cash : 0;
       const totalPortfolio = totalInvestedVal + totalCash;
       const totalProfit = totalInvestedVal - totalCostVal;
       const totalProfitPerc = totalCostVal > 0 ? (totalProfit / totalCostVal) * 100 : 0;
       
-      const totalDailyPerc = (totalPortfolio - totalDailyGainLoss) > 0 
-        ? (totalDailyGainLoss / (totalPortfolio - totalDailyGainLoss)) * 100 
-        : 0;
+      const prevTotalPortfolio = totalPortfolio - totalDailyGainLoss;
+      const totalDailyPerc = prevTotalPortfolio > 0 ? (totalDailyGainLoss / prevTotalPortfolio) * 100 : 0;
 
-      document.getElementById('total-val').innerText = formatEUR(totalPortfolio);
-      document.getElementById('invested-val').innerText = formatEUR(totalInvestedVal);
-      document.getElementById('cash-val').innerText = formatEUR(totalCash);
+      safeSetText('total-val', formatEUR(totalPortfolio));
+      safeSetText('invested-val', formatEUR(totalInvestedVal));
+      safeSetText('cash-val', formatEUR(totalCash));
 
       // Variazione Giornaliera Totale
-      const dailyEl = document.getElementById('daily-total-val');
       const isDailyPos = totalDailyGainLoss >= 0;
-      dailyEl.className = `text-xs font-semibold mt-1 ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}`;
-      dailyEl.innerText = `Oggi: ${isDailyPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${totalDailyPerc.toFixed(2)}%)`;
+      safeSetClass('daily-total-val', `text-xs font-semibold mt-1 ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}`);
+      safeSetText('daily-total-val', `Oggi: ${isDailyPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${totalDailyPerc.toFixed(2)}%)`);
 
       // Rendimento Totale
-      const glEl = document.getElementById('gain-loss-val');
       const isPos = totalProfit >= 0;
-      glEl.className = `text-xs font-semibold mt-1 ${isPos ? 'text-emerald-400' : 'text-rose-400'}`;
-      glEl.innerText = `Totale: ${isPos ? '+' : ''}${formatEUR(totalProfit)} (${totalProfitPerc.toFixed(2)}%)`;
+      safeSetClass('gain-loss-val', `text-xs font-semibold mt-1 ${isPos ? 'text-emerald-400' : 'text-rose-400'}`);
+      safeSetText('gain-loss-val', `Totale: ${isPos ? '+' : ''}${formatEUR(totalProfit)} (${totalProfitPerc.toFixed(2)}%)`);
 
       renderTable();
     }
 
     function renderTable() {
       const tbody = document.getElementById('assets-table-body');
+      if (!tbody) return;
       
       if (!currentUser) {
         tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Effettua l'accesso per visualizzare il portafoglio.</td></tr>`;
@@ -300,13 +332,18 @@
       }
 
       if (portfolioData.assets.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Nessun titolo. Clicca sul pulsante "+ Aggiungi" in alto a destra nella tabella.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 text-xs">Nessun titolo. Clicca su "+ Aggiungi" in alto a destra nella tabella.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = portfolioData.assets.map((item, index) => {
-        const val = item.qty * item.currPrice;
-        const cost = item.qty * item.buyPrice;
+        const name = item.name || item.ticker || 'Titolo';
+        const qty = item.qty || item.quantita || 0;
+        const buyPrice = item.buyPrice || item.pmc || 0;
+        const currPrice = item.currPrice || item.prezzo || buyPrice;
+
+        const val = qty * currPrice;
+        const cost = qty * buyPrice;
         const profit = val - cost;
         const profitPerc = cost > 0 ? (profit / cost) * 100 : 0;
         const isPos = profit >= 0;
@@ -316,24 +353,22 @@
 
         return `
           <tr class="hover:bg-slate-800/30 transition-colors">
-            <td class="py-2.5 px-4 font-medium text-white text-xs">${item.name}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${item.qty}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${formatEUR(item.buyPrice)}</td>
-            <td class="py-2.5 px-4 text-right text-xs">${formatEUR(item.currPrice)}</td>
+            <td class="py-2.5 px-4 font-medium text-white text-xs">${name}</td>
+            <td class="py-2.5 px-4 text-right text-xs">${qty}</td>
+            <td class="py-2.5 px-4 text-right text-xs">${formatEUR(buyPrice)}</td>
+            <td class="py-2.5 px-4 text-right text-xs">${formatEUR(currPrice)}</td>
             <td class="py-2.5 px-4 text-right font-medium text-white text-xs">${formatEUR(val)}</td>
             
-            <!-- Variazione Giornaliera -->
             <td class="py-2.5 px-4 text-right font-medium text-xs ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
               ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
             </td>
 
-            <!-- Rendimento Totale -->
             <td class="py-2.5 px-4 text-right font-medium text-xs ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
               ${isPos ? '+' : ''}${formatEUR(profit)} (${profitPerc.toFixed(2)}%)
             </td>
 
             <td class="py-2.5 px-4 text-center flex justify-center gap-1">
-              <button onclick="editAsset(${index})" class="text-slate-500 hover:text-blue-400 p-1 transition-colors" title="Modifica prezzo/variazione">
+              <button onclick="editAsset(${index})" class="text-slate-500 hover:text-blue-400 p-1 transition-colors" title="Modifica">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
                 </svg>
@@ -350,12 +385,15 @@
     }
 
     function openModal() {
-      document.getElementById('modal-add').classList.remove('hidden');
+      const modal = document.getElementById('modal-add');
+      if (modal) modal.classList.remove('hidden');
     }
 
     function closeModal() {
-      document.getElementById('modal-add').classList.add('hidden');
-      document.getElementById('form-add-asset').reset();
+      const modal = document.getElementById('modal-add');
+      if (modal) modal.classList.add('hidden');
+      const form = document.getElementById('form-add-asset');
+      if (form) form.reset();
     }
 
     function saveAsset(e) {
@@ -375,18 +413,21 @@
 
     function editAsset(index) {
       const asset = portfolioData.assets[index];
-      const newCurrPrice = prompt(`Nuovo Prezzo Attuale per ${asset.name} (€):`, asset.currPrice);
+      const name = asset.name || asset.ticker || 'Titolo';
+      const currP = asset.currPrice || asset.prezzo || 0;
+      
+      const newCurrPrice = prompt(`Nuovo Prezzo Attuale per ${name} (€):`, currP);
       if (newCurrPrice === null) return;
       
-      const newDailyChange = prompt(`Variazione Giornaliera per ${asset.name} (%):`, asset.dailyChange || 0);
+      const newDailyChange = prompt(`Variazione Giornaliera per ${name} (%):`, asset.dailyChange || 0);
       if (newDailyChange === null) return;
 
-      const currP = parseFloat(newCurrPrice);
-      const dailyC = parseFloat(newDailyChange);
+      const pVal = parseFloat(newCurrPrice);
+      const dVal = parseFloat(newDailyChange);
 
-      if (!isNaN(currP) && !isNaN(dailyC)) {
-        portfolioData.assets[index].currPrice = currP;
-        portfolioData.assets[index].dailyChange = dailyC;
+      if (!isNaN(pVal) && !isNaN(dVal)) {
+        portfolioData.assets[index].currPrice = pVal;
+        portfolioData.assets[index].dailyChange = dVal;
         saveUserData();
       }
     }
@@ -399,7 +440,8 @@
     }
 
     function editCash() {
-      const newCash = prompt("Nuova liquidità (€):", portfolioData.cash || 0);
+      const currentCash = typeof portfolioData.cash === 'number' ? portfolioData.cash : 0;
+      const newCash = prompt("Nuova liquidità (€):", currentCash);
       if (newCash !== null) {
         const val = parseFloat(newCash);
         if (!isNaN(val)) {
