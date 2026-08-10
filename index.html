@@ -368,7 +368,6 @@
       if (refreshLabel) refreshLabel.innerText = "Aggiornamento...";
 
       try {
-        // Raccoglie tutti i ticker in un'unica stringa separata da virgole
         const tickers = portfolioData.assets.map(a => a.name.trim()).join(',');
         const url = `https://proxy-stocks-prices.onrender.com/price?symbols=${encodeURIComponent(tickers)}`;
 
