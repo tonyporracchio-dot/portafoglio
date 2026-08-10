@@ -354,7 +354,7 @@
       }
     }
 
-    // CHIAMATA DIRETTA AL PROXY RENDER SENZA INTERMEDIARI
+    // CHIAMATA DIRETTA AL PROXY RENDER
     async function fetchPricesFromProxy() {
       if (portfolioData.assets.length === 0) {
         alert("Nessun titolo presente in portafoglio.");
@@ -370,7 +370,6 @@
       let updatedCount = 0;
 
       try {
-        // Esegue le chiamate in sequenza o con leggeri ritardi per evitare sovraccarichi o blocchi
         for (let asset of portfolioData.assets) {
           const symbol = asset.name ? asset.name.trim() : '';
           if (!symbol) continue;
@@ -397,7 +396,7 @@
               console.warn(`Tentativo ${attempt} fallito per ${symbol}:`, err);
             }
             if (!success && attempt === 1) {
-              await new Promise(r => setTimeout(r, 1500)); // Attende 1.5 secondi in caso di cold start
+              await new Promise(r => setTimeout(r, 1500));
             }
           }
         }
@@ -406,7 +405,7 @@
           saveUserData();
           updateUI();
         } else {
-          alert("Impossibile recuperare i prezzi. Assicurati che i ticker inseriti siano validi per Yahoo Finance (es. SWDA.MI, AAPL). Se il server era in sleep, riprova tra qualche secondo.");
+          alert("Impossibile recuperare i prezzi. Assicurati che i ticker siano validi per Yahoo Finance (es. SWDA.MI, AAPL). Se il server era in sleep, riprova tra qualche secondo.");
         }
       } catch (err) {
         console.error("Errore generale durante l'aggiornamento:", err);
@@ -551,7 +550,7 @@
       const newCurrPrice = prompt(`Nuovo Prezzo Attuale per ${name} (€):`, currP);
       if (newCurrPrice === null) return;
       
-      The newDailyChange = prompt(`Variazione Giornaliera per ${name} (%):`, asset.dailyChange || 0);
+      const newDailyChange = prompt(`Variazione Giornaliera per ${name} (%):`, asset.dailyChange || 0);
       if (newDailyChange === null) return;
 
       const pVal = parseFloat(newCurrPrice);
