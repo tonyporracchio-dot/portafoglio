@@ -270,6 +270,12 @@
     let currentUser = null;
     let portfolioData = { cash: 0, prevCash: 0, assets: [], watchlist: [] };
     let allocationChartInstance = null;
+    let isLoggingIn = false; // Flag anti-conflitto doppio click
+
+    // Gestione eventuale risultato redirect di riserva
+    auth.getRedirectResult().catch((error) => {
+      console.warn("Redirect result info:", error);
+    });
 
     function safeSetText(id, text) {
       const el = document.getElementById(id);
@@ -396,10 +402,27 @@
       }
     });
 
-    // Ripristinato Popup (funzionante su Safari/Chrome prima dell'ultima modifica)
+    // Login con protezione anti-conflitto popup e fallback automatico
     function loginWithGoogle() {
+      if (isLoggingIn) return;
+      isLoggingIn = true;
+
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(err => alert("Errore accesso: " + err.message));
+      auth.signInWithPopup(provider)
+        .then(() => {
+          isLoggingIn = false;
+        })
+        .catch(err => {
+          isLoggingIn = false;
+          if (err.code === 'auth/cancelled-popup-request') {
+            // Se il popup va in conflitto, prova il redirect automatico come fallback
+            auth.signInWithRedirect(provider).catch(e => alert("Errore redirect: " + e.message));
+          } else if (err.code === 'auth/popup-blocked') {
+            alert("Il browser ha bloccato il popup di accesso. Consenti i popup per questo sito.");
+          } else {
+            alert("Errore accesso: " + err.message);
+          }
+        });
     }
 
     function logout() {
