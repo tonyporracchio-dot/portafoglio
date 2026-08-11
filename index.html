@@ -271,11 +271,6 @@
     let portfolioData = { cash: 0, prevCash: 0, assets: [], watchlist: [] };
     let allocationChartInstance = null;
 
-    // Gestione del risultato di autenticazione tramite Redirect (Risolve Chrome/Safari iOS)
-    auth.getRedirectResult().catch((error) => {
-      console.error("Errore login redirect:", error);
-    });
-
     function safeSetText(id, text) {
       const el = document.getElementById(id);
       if (el) el.innerText = text;
@@ -401,10 +396,10 @@
       }
     });
 
-    // Utilizzo del redirect per compatibilità totale con Chrome e Safari su iOS
+    // Ripristinato Popup (funzionante su Safari/Chrome prima dell'ultima modifica)
     function loginWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithRedirect(provider).catch(err => alert("Errore accesso: " + err.message));
+      auth.signInWithPopup(provider).catch(err => alert("Errore accesso: " + err.message));
     }
 
     function logout() {
