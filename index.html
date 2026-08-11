@@ -6,15 +6,17 @@
   <title>Mio Portafoglio</title>
 
   <!-- PWA & Mobile Settings -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json?v=2">
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Portafoglio">
 
-  <!-- Favicon SVG & Apple Touch Icon (Icona Alta Volatilità) -->
+  <!-- Favicon per Browser Desktop (SVG Inline) -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='50%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%2310b981'/%3E%3C/linearGradient%3E%3ClinearGradient id='glow' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981' stop-opacity='0.22'/%3E%3Cstop offset='100%25' stop-color='%232563eb' stop-opacity='0.0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 L 390 370 Z' fill='url(%23glow)'/%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 M 315 180 H 390 V 255' fill='none' stroke='url(%23g)' stroke-width='34' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='50%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%2310b981'/%3E%3C/linearGradient%3E%3ClinearGradient id='glow' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981' stop-opacity='0.22'/%3E%3Cstop offset='100%25' stop-color='%232563eb' stop-opacity='0.0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 L 390 370 Z' fill='url(%23glow)'/%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 M 315 180 H 390 V 255' fill='none' stroke='url(%23g)' stroke-width='34' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+  <!-- Apple Touch Icon per iPhone/iPad -->
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=2">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -32,11 +34,9 @@
   <!-- BARRA SUPERIORE -->
   <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-2.5 backdrop-blur-md">
     <div class="max-w-4xl mx-auto flex justify-between items-center">
-      <div class="flex items-center gap-2">
-        <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-          Portafoglio
-        </span>
-      </div>
+      <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+        Portafoglio
+      </span>
 
       <div id="auth-container">
         <button 
