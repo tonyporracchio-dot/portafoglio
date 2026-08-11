@@ -594,13 +594,29 @@
         return `
           <div class="bg-slate-900/60 border border-slate-700/50 rounded-lg p-3 space-y-2">
             
-            <!-- RIGA 1: Nome Titolo (sinistra) - Valore Attuale (destra) -->
+            <!-- RIGA 1: Nome Titolo (sinistra) - Valore Singola Quota (destra) -->
             <div class="flex justify-between items-center gap-2">
               <div class="flex items-center gap-2 min-w-0">
                 <span class="font-semibold text-white text-sm truncate">${name}</span>
               </div>
+              <span class="font-bold text-white text-sm">${formatEUR(currPrice)}</span>
+            </div>
+
+            <!-- RIGA 2: Simbolo (sinistra) - Variazione Giornaliera € e % (destra) -->
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-blue-400 font-mono font-medium">${ticker}</span>
+              <span class="font-semibold ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
+                ${dailyEuro >= 0 ? '+' : ''}${formatEUR(dailyEuro)} (${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%)
+              </span>
+            </div>
+
+            <!-- RIGA 3: Quote @ PMC (sinistra) - Variazione Totale € e % + Tasti Azione (destra) -->
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400"><strong class="text-slate-200 font-medium">${qty}</strong> @ <strong class="text-slate-200 font-medium">${formatEUR(buyPrice, 3, 3)}</strong></span>
               <div class="flex items-center gap-2">
-                <span class="font-bold text-white text-sm">${formatEUR(val)}</span>
+                <span class="font-semibold ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
+                  ${isPos ? '+' : ''}${formatEUR(profit)} (${isPos ? '+' : ''}${profitPerc.toFixed(2)}%)
+                </span>
                 <div class="flex items-center gap-1 bg-slate-800 px-1 py-0.5 rounded border border-slate-700/60">
                   <button onclick="editAsset(${index})" class="text-slate-400 hover:text-blue-400 p-0.5" title="Modifica PMC e Dati">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -614,22 +630,6 @@
                   </button>
                 </div>
               </div>
-            </div>
-
-            <!-- RIGA 2: Simbolo (sinistra) - Variazione Giornaliera € e % (destra) -->
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-blue-400 font-mono font-medium">${ticker}</span>
-              <span class="font-semibold ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
-                ${dailyEuro >= 0 ? '+' : ''}${formatEUR(dailyEuro)} (${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%)
-              </span>
-            </div>
-
-            <!-- RIGA 3: PMC (sinistra) - Variazione Totale € e % (destra) -->
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-slate-400">PMC: <strong class="text-slate-200 font-medium">${formatEUR(buyPrice, 3, 3)}</strong></span>
-              <span class="font-semibold ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
-                ${isPos ? '+' : ''}${formatEUR(profit)} (${isPos ? '+' : ''}${profitPerc.toFixed(2)}%)
-              </span>
             </div>
 
           </div>
@@ -678,129 +678,6 @@
           </div>
         `;
       }).join('');
-    }
-
-    // MODALI TITOLI
-    function openModal(index = -1) {
-      const modal = document.getElementById('modal-add');
-      const modalTitle = document.getElementById('modal-title');
-      const editingIndex = document.getElementById('editing-index');
-      
-      document.getElementById('form-add-asset').reset();
-      
-      if (index >= 0 && portfolioData.assets[index]) {
-        const item = portfolioData.assets[index];
-        modalTitle.innerText = "Modifica titolo in portafoglio";
-        editingIndex.value = index;
-        document.getElementById('asset-ticker').value = item.ticker || '';
-        document.getElementById('asset-name').value = item.name || '';
-        document.getElementById('asset-qty').value = item.qty || '';
-        document.getElementById('asset-buy-price').value = item.buyPrice || '';
-      } else {
-        modalTitle.innerText = "Aggiungi titolo in portafoglio";
-        editingIndex.value = -1;
-      }
-      
-      modal.classList.remove('hidden');
-    }
-
-    function closeModal() {
-      document.getElementById('modal-add').classList.add('hidden');
-    }
-
-    function saveAsset(e) {
-      e.preventDefault();
-      const index = parseInt(document.getElementById('editing-index').value);
-      const ticker = document.getElementById('asset-ticker').value.trim().toUpperCase();
-      const name = document.getElementById('asset-name').value.trim() || ticker;
-      const qty = parseFloat(document.getElementById('asset-qty').value) || 0;
-      const buyPrice = parseFloat(document.getElementById('asset-buy-price').value) || 0;
-
-      if (!ticker || qty <= 0) {
-        alert("Inserisci un ticker valido e una quantità maggiore di zero.");
-        return;
-      }
-
-      if (index >= 0) {
-        portfolioData.assets[index] = {
-          ...portfolioData.assets[index],
-          ticker, name, qty, buyPrice,
-          currPrice: portfolioData.assets[index].currPrice || buyPrice
-        };
-      } else {
-        portfolioData.assets.push({
-          ticker, name, qty, buyPrice, currPrice: buyPrice, dailyChange: 0
-        });
-      }
-
-      saveUserData();
-      updateUI();
-      closeModal();
-    }
-
-    function editAsset(index) {
-      openModal(index);
-    }
-
-    function deleteAsset(index) {
-      if (confirm("Sei sicuro di voler eliminare questo titolo dal portafoglio?")) {
-        portfolioData.assets.splice(index, 1);
-        saveUserData();
-        updateUI();
-      }
-    }
-
-    // MODALI WATCHLIST
-    function openWatchlistModal() {
-      document.getElementById('form-add-watchlist').reset();
-      document.getElementById('modal-watchlist').classList.remove('hidden');
-    }
-
-    function closeWatchlistModal() {
-      document.getElementById('modal-watchlist').classList.add('hidden');
-    }
-
-    function saveWatchlistAsset(e) {
-      e.preventDefault();
-      const ticker = document.getElementById('watchlist-ticker').value.trim().toUpperCase();
-      const name = document.getElementById('watchlist-name').value.trim() || ticker;
-
-      if (!ticker) {
-        alert("Inserisci un ticker valido.");
-        return;
-      }
-
-      portfolioData.watchlist = portfolioData.watchlist || [];
-      portfolioData.watchlist.push({
-        ticker, name, currPrice: 0, dailyChange: 0
-      });
-
-      saveUserData();
-      updateUI();
-      closeWatchlistModal();
-    }
-
-    function deleteWatchlistAsset(index) {
-      if (confirm("Rimuovere questo titolo dalla watchlist?")) {
-        portfolioData.watchlist.splice(index, 1);
-        saveUserData();
-        updateUI();
-      }
-    }
-
-    // MODIFICA LIQUIDITÀ
-    function editCash() {
-      const currentCash = portfolioData.cash || 0;
-      const input = prompt("Inserisci la nuova liquidità (€):", currentCash);
-      if (input !== null) {
-        const val = parseFloat(input.replace(',', '.'));
-        if (!isNaN(val)) {
-          portfolioData.prevCash = portfolioData.cash;
-          portfolioData.cash = val;
-          saveUserData();
-          updateUI();
-        }
-      }
     }
   </script>
 </body>
