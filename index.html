@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mio Portafoglio</title>
 
+  <style>
+  /* Nasconde la barra di scorrimento su iOS (Safari/Chrome) e altri browser moderni */
+  ::-webkit-scrollbar {
+    display: none;
+    width: 0px;
+    background: transparent;
+  }
+  
+  /* Per compatibilità con Firefox */
+  html {
+    scrollbar-width: none;
+  }
+</style>
+  
   <!-- PWA & Mobile Settings -->
   <link rel="manifest" href="manifest.json?v=2">
   <meta name="theme-color" content="#0f172a">
