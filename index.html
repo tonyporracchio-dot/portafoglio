@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='50%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%2310b981'/%3E%3C/linearGradient%3E%3ClinearGradient id='glow' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981' stop-opacity='0.22'/%3E%3Cstop offset='100%25' stop-color='%232563eb' stop-opacity='0.0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 L 390 370 Z' fill='url(%23glow)'/%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 M 315 180 H 390 V 255' fill='none' stroke='url(%23g)' stroke-width='34' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='50%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%2310b981'/%3E%3C/linearGradient%3E%3ClinearGradient id='glow' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981' stop-opacity='0.22'/%3E%3Cstop offset='100%25' stop-color='%232563eb' stop-opacity='0.0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 L 390 370 Z' fill='url(%23glow)'/%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 M 315 180 H 390 V 255' fill='none' stroke='url(%23g)' stroke-width='34' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 
-  <!-- Stili CSS per rimozione barre di scorrimento laterali/orizzontali -->
+  <!-- Stili CSS -->
   <style>
     ::-webkit-scrollbar {
       display: none;
@@ -29,6 +29,7 @@
     }
     body {
       overflow-x: hidden;
+      overscroll-behavior-y: contain; /* Blocca il rimbalzo/reload nativo del browser per gestire il Pull-to-Refresh custom */
     }
   </style>
 
@@ -44,6 +45,15 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-12 select-none">
+
+  <!-- INDICATORE PULL-TO-REFRESH VISIVO -->
+  <div id="ptr-indicator" class="fixed top-0 left-0 right-0 z-50 flex items-center justify-center pointer-events-none transition-transform duration-200 -translate-y-full">
+    <div class="bg-slate-800/95 border border-slate-700/80 shadow-xl backdrop-blur-md rounded-full p-2.5 mt-3 flex items-center justify-center">
+      <svg id="ptr-icon" class="w-5 h-5 text-blue-400 transition-transform duration-75" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    </div>
+  </div>
 
   <!-- BARRA SUPERIORE -->
   <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-2.5 backdrop-blur-md">
@@ -172,7 +182,7 @@
         </button>
       </div>
 
-      <!-- WATCHLIST COMPATTA A RIGHE SINGOLE -->
+      <!-- WATCHLIST COMPATTA -->
       <div id="watchlist-list-body" class="divide-y divide-slate-700/40">
         <div class="py-6 text-center text-slate-500 text-xs">
           Nessun titolo in watchlist.
@@ -270,9 +280,8 @@
     let currentUser = null;
     let portfolioData = { cash: 0, prevCash: 0, assets: [], watchlist: [] };
     let allocationChartInstance = null;
-    let isLoggingIn = false; // Flag anti-conflitto doppio click
+    let isLoggingIn = false;
 
-    // Gestione eventuale risultato redirect di riserva
     auth.getRedirectResult().catch((error) => {
       console.warn("Redirect result info:", error);
     });
@@ -402,20 +411,16 @@
       }
     });
 
-    // Login con protezione anti-conflitto popup e fallback automatico
     function loginWithGoogle() {
       if (isLoggingIn) return;
       isLoggingIn = true;
 
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider)
-        .then(() => {
-          isLoggingIn = false;
-        })
+        .then(() => { isLoggingIn = false; })
         .catch(err => {
           isLoggingIn = false;
           if (err.code === 'auth/cancelled-popup-request') {
-            // Se il popup va in conflitto, prova il redirect automatico come fallback
             auth.signInWithRedirect(provider).catch(e => alert("Errore redirect: " + e.message));
           } else if (err.code === 'auth/popup-blocked') {
             alert("Il browser ha bloccato il popup di accesso. Consenti i popup per questo sito.");
@@ -467,7 +472,7 @@
       }
     }
 
-    // GESTIONE MODALI E AZIONI
+    // MODALI E AZIONI
     function openModal() {
       document.getElementById('editing-index').value = "-1";
       document.getElementById('modal-title').innerText = "Aggiungi titolo in portafoglio";
@@ -583,10 +588,7 @@
       const allAssets = portfolioData.assets || [];
       const allWatchlist = portfolioData.watchlist || [];
 
-      if (allAssets.length === 0 && allWatchlist.length === 0) {
-        alert("Nessun titolo presente in portafoglio o in watchlist.");
-        return;
-      }
+      if (allAssets.length === 0 && allWatchlist.length === 0) return;
 
       const refreshIcon = document.getElementById('refresh-icon');
       const refreshLabel = document.getElementById('refresh-label');
@@ -654,11 +656,7 @@
         if (updatedCount > 0) {
           saveUserData();
           updateUI();
-        } else {
-          alert("Nessun ticker ha restituito dati validi. Controlla i simboli inseriti.");
         }
-      } else {
-        alert("Il server su Render è in fase di avvio. Riprova tra 10 secondi.");
       }
 
       if (refreshIcon) refreshIcon.classList.remove('animate-spin');
@@ -711,66 +709,125 @@
 
       // 3. Titoli
       safeSetText('invested-val', formatEUR(totalInvestedVal));
-      
-      const prevInvestedVal = totalInvestedVal - totalDailyGainLoss;
-      const investedDailyPerc = prevInvestedVal > 0 ? (totalDailyGainLoss / prevInvestedVal) * 100 : 0;
-      safeSetClass('invested-daily-val', `text-xs font-semibold mt-1 ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}`);
-      safeSetText('invested-daily-val', `Oggi: ${isDailyPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${isDailyPos ? '+' : ''}${investedDailyPerc.toFixed(2)}%)`);
+      const isInvestedDailyPos = totalDailyGainLoss >= 0;
+      safeSetClass('invested-daily-val', `text-xs font-semibold mt-1 ${isInvestedDailyPos ? 'text-emerald-400' : 'text-rose-400'}`);
+      safeSetText('invested-daily-val', `Oggi: ${isInvestedDailyPos ? '+' : ''}${formatEUR(totalDailyGainLoss)} (${isInvestedDailyPos ? '+' : ''}${totalDailyPerc.toFixed(2)}%)`);
 
-      const isPos = totalProfit >= 0;
-      safeSetClass('gain-loss-val', `text-xs font-semibold text-slate-400`);
-      safeSetText('gain-loss-val', `Totale: ${isPos ? '+' : ''}${formatEUR(totalProfit)} (${isPos ? '+' : ''}${totalProfitPerc.toFixed(2)}%)`);
+      const isProfitPos = totalProfit >= 0;
+      safeSetClass('gain-loss-val', `text-xs font-semibold mt-0.5 ${isProfitPos ? 'text-emerald-400' : 'text-rose-400'}`);
+      safeSetText('gain-loss-val', `Totale: ${isProfitPos ? '+' : ''}${formatEUR(totalProfit)} (${isProfitPos ? '+' : ''}${totalProfitPerc.toFixed(2)}%)`);
 
-      renderAllocationChart();
-      renderList();
-      renderWatchlistList();
+      // Rendering Liste e Grafici
+      renderAssetsList();
+      renderWatchlist();
+      renderAllocationChart(totalInvestedVal, totalCash);
     }
 
-    // RENDERING GRAFICO ALLOCAZIONE (DOUGHNUT)
-    function renderAllocationChart() {
+    // --- RENDER LISTA TITOLI ---
+    function renderAssetsList() {
+      const container = document.getElementById('assets-list-body');
+      if (!container) return;
+
+      if (!portfolioData.assets || portfolioData.assets.length === 0) {
+        container.innerHTML = `<div class="py-8 text-center text-slate-500 text-xs">Nessun titolo in portafoglio. Clicca su "+ Aggiungi" per iniziare.</div>`;
+        return;
+      }
+
+      container.innerHTML = portfolioData.assets.map((item, index) => {
+        const qty = item.qty || 0;
+        const buyPrice = item.buyPrice || 0;
+        const currPrice = item.currPrice || buyPrice;
+        const totalVal = qty * currPrice;
+        const profit = (currPrice - buyPrice) * qty;
+        const profitPerc = buyPrice > 0 ? ((currPrice - buyPrice) / buyPrice) * 100 : 0;
+        const dailyPerc = item.dailyChange || 0;
+
+        const isProfitPos = profit >= 0;
+        const isDailyPos = dailyPerc >= 0;
+
+        return `
+          <div class="bg-slate-900/60 border border-slate-700/50 rounded-lg p-3 flex justify-between items-center gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-white truncate">${item.ticker}</span>
+                <span class="text-xs text-slate-400 truncate">${item.name}</span>
+              </div>
+              <div class="text-xs text-slate-400 mt-1">
+                ${qty} quote @ ${formatEUR(buyPrice)}
+              </div>
+            </div>
+
+            <div class="text-right">
+              <div class="font-bold text-sm text-white">${formatEUR(totalVal)}</div>
+              <div class="text-[11px] font-medium ${isProfitPos ? 'text-emerald-400' : 'text-rose-400'}">
+                Totale: ${isProfitPos ? '+' : ''}${formatEUR(profit)} (${isProfitPos ? '+' : ''}${profitPerc.toFixed(2)}%)
+              </div>
+              <div class="text-[10px] font-medium ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
+                Oggi: ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1 ml-2">
+              <button onclick="editAsset(${index})" class="text-slate-400 hover:text-blue-400 text-xs p-1">✏️</button>
+              <button onclick="deleteAsset(${index})" class="text-slate-400 hover:text-rose-400 text-xs p-1">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- RENDER WATCHLIST ---
+    function renderWatchlist() {
+      const container = document.getElementById('watchlist-list-body');
+      if (!container) return;
+
+      if (!portfolioData.watchlist || portfolioData.watchlist.length === 0) {
+        container.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">Nessun titolo in watchlist.</div>`;
+        return;
+      }
+
+      container.innerHTML = portfolioData.watchlist.map((item, index) => {
+        const currPrice = item.currPrice || 0;
+        const dailyPerc = item.dailyChange || 0;
+        const isDailyPos = dailyPerc >= 0;
+
+        return `
+          <div class="px-4 py-2.5 flex justify-between items-center hover:bg-slate-700/20 transition-colors">
+            <div>
+              <span class="font-bold text-xs text-white">${item.ticker}</span>
+              <span class="text-[11px] text-slate-400 ml-2">${item.name}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-white font-medium">${currPrice > 0 ? formatEUR(currPrice) : '---'}</span>
+              <span class="text-[11px] font-semibold ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
+                ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
+              </span>
+              <button onclick="deleteWatchlistAsset(${index})" class="text-slate-500 hover:text-rose-400 text-xs ml-1">&times;</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- RENDER GRAFICO ALLOCAZIONE ---
+    function renderAllocationChart(invested, cash) {
       const ctx = document.getElementById('allocationChart');
       if (!ctx) return;
-
-      const labels = [];
-      const dataValues = [];
-      const bgColors = [
-        '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', 
-        '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6'
-      ];
-
-      portfolioData.assets.forEach((a, i) => {
-        const qty = a.qty || 0;
-        const currPrice = a.currPrice || a.buyPrice || 0;
-        const val = qty * currPrice;
-        if (val > 0) {
-          labels.push(a.name || a.ticker || `Titolo ${i+1}`);
-          dataValues.push(val);
-        }
-      });
-
-      const cash = typeof portfolioData.cash === 'number' ? portfolioData.cash : 0;
-      if (cash > 0) {
-        labels.push('Liquidità');
-        dataValues.push(cash);
-      }
 
       if (allocationChartInstance) {
         allocationChartInstance.destroy();
       }
 
-      if (dataValues.length === 0) {
-        return;
-      }
+      if (invested === 0 && cash === 0) return;
 
       allocationChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: labels,
+          labels: ['Titoli & ETF', 'Liquidità'],
           datasets: [{
-            data: dataValues,
-            backgroundColor: bgColors.slice(0, dataValues.length),
-            borderColor: '#1e293b',
-            borderWidth: 2
+            data: [invested, cash],
+            backgroundColor: ['#3b82f6', '#10b981'],
+            borderWidth: 0
           }]
         },
         options: {
@@ -779,140 +836,81 @@
           plugins: {
             legend: {
               position: 'bottom',
-              labels: {
-                color: '#94a3b8',
-                font: { size: 11 },
-                padding: 12,
-                usePointStyle: true
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const value = context.raw || 0;
-                  const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                  return ` ${context.label}: ${formatEUR(value)} (${percentage}%)`;
-                }
-              }
+              labels: { color: '#94a3b8', font: { size: 11 } }
             }
-          },
-          cutout: '65%'
+          }
         }
       });
     }
 
-    // RENDERING CARDS TITOLI
-    function renderList() {
-      const container = document.getElementById('assets-list-body');
-      if (!container) return;
+    // --- AGGIORNAMENTO AUTOMATICO PREZZI ALL'AVVIO ---
+    let initialAutoFetchDone = false;
 
-      if (portfolioData.assets.length === 0) {
-        container.innerHTML = `<div class="py-8 text-center text-slate-500 text-xs">Nessun titolo in portafoglio. Clicca su "+ Aggiungi" per iniziare.</div>`;
-        return;
+    const originalUpdateUI = updateUI;
+    updateUI = function() {
+      originalUpdateUI();
+      if (!initialAutoFetchDone) {
+        const hasAssets = portfolioData.assets && portfolioData.assets.length > 0;
+        const hasWatchlist = portfolioData.watchlist && portfolioData.watchlist.length > 0;
+        if (hasAssets || hasWatchlist) {
+          initialAutoFetchDone = true;
+          setTimeout(() => {
+            fetchPricesFromProxy();
+          }, 500);
+        }
+      }
+    };
+
+    // --- GESTIONE SWIPE PULL-TO-REFRESH ---
+    let startY = 0;
+    let currentY = 0;
+    let isPulling = false;
+    const pullThreshold = 70; // Pixel minimi di scorrimento per attivare l'aggiornamento
+
+    const ptrIndicator = document.getElementById('ptr-indicator');
+    const ptrIcon = document.getElementById('ptr-icon');
+
+    window.addEventListener('touchstart', (e) => {
+      if (window.scrollY === 0) {
+        startY = e.touches[0].clientY;
+        isPulling = true;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!isPulling) return;
+      currentY = e.touches[0].clientY;
+      const diff = currentY - startY;
+
+      if (diff > 0 && window.scrollY === 0) {
+        // Applica una resistenza esponenziale per una sensazione fluida
+        const pullDistance = Math.min(diff * 0.45, pullThreshold + 25);
+        const progress = Math.min(pullDistance / pullThreshold, 1);
+
+        ptrIndicator.style.transform = `translateY(${pullDistance - 45}px)`;
+        ptrIcon.style.transform = `rotate(${progress * 360}deg)`;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', async () => {
+      if (!isPulling) return;
+      isPulling = false;
+
+      const diff = currentY - startY;
+      if (diff >= pullThreshold && window.scrollY === 0) {
+        ptrIndicator.style.transform = `translateY(16px)`;
+        ptrIcon.classList.add('animate-spin');
+
+        await fetchPricesFromProxy();
+
+        ptrIcon.classList.remove('animate-spin');
       }
 
-      container.innerHTML = portfolioData.assets.map((item, index) => {
-        const name = item.name || item.ticker || 'Titolo';
-        const ticker = (item.ticker || item.name || '').toUpperCase();
-        const qty = item.qty || 0;
-        const buyPrice = item.buyPrice || 0;
-        const currPrice = item.currPrice || buyPrice;
-
-        const val = qty * currPrice;
-        const cost = qty * buyPrice;
-        const profit = val - cost;
-        const profitPerc = cost > 0 ? (profit / cost) * 100 : 0;
-        const isPos = profit >= 0;
-
-        const dailyPerc = item.dailyChange || 0;
-        const prevUnitPrice = dailyPerc !== 0 ? currPrice / (1 + (dailyPerc / 100)) : currPrice;
-        const dailyEuro = (currPrice - prevUnitPrice) * qty;
-        const isDailyPos = dailyPerc >= 0;
-
-        return `
-          <div class="bg-slate-900/60 border border-slate-700/50 rounded-lg p-3 space-y-2">
-            <div class="flex justify-between items-center gap-2">
-              <div class="flex items-center gap-2 min-w-0">
-                <span class="font-semibold text-white text-sm truncate">${name}</span>
-              </div>
-              <span class="font-bold text-white text-sm">${formatEUR(currPrice)}</span>
-            </div>
-
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-blue-400 font-mono font-medium">${ticker}</span>
-              <span class="font-semibold ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
-                ${dailyEuro >= 0 ? '+' : ''}${formatEUR(dailyEuro)} (${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%)
-              </span>
-            </div>
-
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-slate-400"><strong class="text-slate-200 font-medium">${qty}</strong> @ <strong class="text-slate-200 font-medium">${formatEUR(buyPrice, 3, 3)}</strong></span>
-              <div class="flex items-center gap-2">
-                <span class="font-semibold ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
-                  ${isPos ? '+' : ''}${formatEUR(profit)} (${isPos ? '+' : ''}${profitPerc.toFixed(2)}%)
-                </span>
-                <div class="flex items-center gap-1 bg-slate-800 px-1 py-0.5 rounded border border-slate-700/60">
-                  <button onclick="editAsset(${index})" class="text-slate-400 hover:text-blue-400 p-0.5" title="Modifica PMC e Dati">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                  <button onclick="deleteAsset(${index})" class="text-slate-500 hover:text-rose-400 p-0.5" title="Elimina">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // RENDERING WATCHLIST
-    function renderWatchlistList() {
-      const container = document.getElementById('watchlist-list-body');
-      if (!container) return;
-
-      const watchlist = portfolioData.watchlist || [];
-
-      if (watchlist.length === 0) {
-        container.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">Nessun titolo in watchlist.</div>`;
-        return;
-      }
-
-      container.innerHTML = watchlist.map((item, index) => {
-        const name = item.name || item.ticker || 'Titolo';
-        const ticker = (item.ticker || item.name || '').toUpperCase();
-        const currPrice = item.currPrice || 0;
-        const dailyPerc = item.dailyChange || 0;
-        const isDailyPos = dailyPerc >= 0;
-
-        return `
-          <div class="px-4 py-2.5 hover:bg-slate-800/40 transition-colors flex justify-between items-center gap-2">
-            <div class="min-w-0 flex-1 flex items-center gap-2">
-              <span class="font-medium text-white text-xs truncate">${name}</span>
-              <span class="font-mono text-[10px] text-blue-400 bg-blue-950/60 border border-blue-800/40 px-1.5 py-0.5 rounded">${ticker}</span>
-            </div>
-            <div class="flex items-center gap-3 text-xs">
-              <div class="text-right">
-                <div class="font-semibold text-white">${formatEUR(currPrice)}</div>
-                <div class="text-[10px] ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}">
-                  ${isDailyPos ? '+' : ''}${dailyPerc.toFixed(2)}%
-                </div>
-              </div>
-              <button onclick="deleteWatchlistAsset(${index})" class="text-slate-500 hover:text-rose-400 p-1" title="Elimina">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
+      ptrIndicator.style.transform = `translateY(-100%)`;
+      ptrIcon.style.transform = `rotate(0deg)`;
+      startY = 0;
+      currentY = 0;
+    });
   </script>
 </body>
 </html>
