@@ -29,6 +29,25 @@
     }
     body {
       overflow-x: hidden;
+      overscroll-behavior-y: contain;
+    }
+    #pull-refresh-indicator {
+      height: 0px;
+      transition: height 0.15s ease-out;
+      overflow: hidden;
+    }
+    #pull-refresh-indicator.snap-back {
+      transition: height 0.25s ease-out;
+    }
+    #pull-refresh-spinner {
+      transform-origin: center;
+    }
+    #pull-refresh-spinner.spinning {
+      animation: pull-spin 0.7s linear infinite;
+    }
+    @keyframes pull-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
   </style>
 
@@ -44,6 +63,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-12 select-none">
+
+  <!-- INDICATORE PULL-TO-REFRESH -->
+  <div id="pull-refresh-indicator" class="fixed top-0 left-0 right-0 z-50 flex justify-center items-end pointer-events-none">
+    <svg id="pull-refresh-spinner" class="h-5 w-5 text-blue-400 mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+  </div>
 
   <!-- BARRA SUPERIORE -->
   <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-2.5 backdrop-blur-md">
@@ -124,16 +150,6 @@
         <h2 class="font-medium text-slate-300 text-xs uppercase tracking-wider">Titoli & ETF</h2>
         
         <div class="flex items-center gap-2">
-          <button 
-            id="btn-refresh-prices"
-            onclick="fetchPricesFromProxy()" 
-            class="text-xs text-slate-300 hover:text-white bg-blue-900/40 hover:bg-blue-800/60 border border-blue-700/60 px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 font-normal">
-            <svg id="refresh-icon" class="h-3 w-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span id="refresh-label">Aggiorna Prezzi</span>
-          </button>
-
           <button 
             id="btn-add-asset"
             onclick="openModal()" 
@@ -271,6 +287,7 @@
     let portfolioData = { cash: 0, prevCash: 0, assets: [], watchlist: [] };
     let allocationChartInstance = null;
     let isLoggingIn = false; // Flag anti-conflitto doppio click
+    let autoFetchDone = false; // Evita richieste multiple di auto-refresh all'apertura
 
     // Gestione eventuale risultato redirect di riserva
     auth.getRedirectResult().catch((error) => {
@@ -399,6 +416,7 @@
         
         portfolioData = loadFromLocalStorage();
         updateUI();
+        autoFetchOnOpen();
       }
     });
 
@@ -452,6 +470,7 @@
         }
         saveToLocalStorage();
         updateUI();
+        autoFetchOnOpen();
       }, err => {
         console.error("Errore lettura Firestore:", err);
         portfolioData = loadFromLocalStorage();
@@ -465,6 +484,17 @@
         db.collection('portafogli_utenti').doc(currentUser.uid).set(portfolioData)
           .catch(err => console.error("Errore salvataggio Cloud:", err));
       }
+    }
+
+    // Aggiorna i prezzi automaticamente una sola volta all'apertura dell'app
+    // (si attiva alla prima volta che i dati sono disponibili, sia da cloud che locali)
+    function autoFetchOnOpen() {
+      if (autoFetchDone) return;
+      const hasData = (portfolioData.assets && portfolioData.assets.length > 0) ||
+                       (portfolioData.watchlist && portfolioData.watchlist.length > 0);
+      if (!hasData) return;
+      autoFetchDone = true;
+      fetchPricesFromProxy();
     }
 
     // GESTIONE MODALI E AZIONI
@@ -584,15 +614,10 @@
       const allWatchlist = portfolioData.watchlist || [];
 
       if (allAssets.length === 0 && allWatchlist.length === 0) {
-        alert("Nessun titolo presente in portafoglio o in watchlist.");
         return;
       }
 
-      const refreshIcon = document.getElementById('refresh-icon');
-      const refreshLabel = document.getElementById('refresh-label');
-      
-      if (refreshIcon) refreshIcon.classList.add('animate-spin');
-      if (refreshLabel) refreshLabel.innerText = "Connessione...";
+      startPullSpinner();
 
       const tickerSet = new Set([
         ...allAssets.map(a => (a.ticker || a.name).trim().toUpperCase()),
@@ -606,8 +631,6 @@
 
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          if (attempt === 2 && refreshLabel) refreshLabel.innerText = "Risveglio server...";
-          
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 20000);
 
@@ -654,15 +677,10 @@
         if (updatedCount > 0) {
           saveUserData();
           updateUI();
-        } else {
-          alert("Nessun ticker ha restituito dati validi. Controlla i simboli inseriti.");
         }
-      } else {
-        alert("Il server su Render è in fase di avvio. Riprova tra 10 secondi.");
       }
 
-      if (refreshIcon) refreshIcon.classList.remove('animate-spin');
-      if (refreshLabel) refreshLabel.innerText = "Aggiorna Prezzi";
+      stopPullSpinner();
     }
 
     function updateUI() {
@@ -913,6 +931,78 @@
         `;
       }).join('');
     }
+
+    // PULL-TO-REFRESH
+    (function initPullToRefresh() {
+      const indicator = document.getElementById('pull-refresh-indicator');
+      const spinner = document.getElementById('pull-refresh-spinner');
+      if (!indicator || !spinner) return;
+
+      const MAX_HEIGHT = 64;
+      const TRIGGER_HEIGHT = 56;
+      let startY = 0;
+      let currentHeight = 0;
+      let tracking = false;
+      let refreshing = false;
+
+      document.addEventListener('touchstart', (e) => {
+        if (window.scrollY === 0 && !refreshing) {
+          startY = e.touches[0].clientY;
+          tracking = true;
+          indicator.classList.remove('snap-back');
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchmove', (e) => {
+        if (!tracking || refreshing) return;
+        const diff = e.touches[0].clientY - startY;
+        if (diff > 0 && window.scrollY === 0) {
+          currentHeight = Math.min(diff * 0.5, MAX_HEIGHT);
+          indicator.style.height = currentHeight + 'px';
+          spinner.style.transform = `rotate(${diff * 2}deg)`;
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchend', () => {
+        if (!tracking || refreshing) return;
+        tracking = false;
+        indicator.classList.add('snap-back');
+
+        if (currentHeight >= TRIGGER_HEIGHT * 0.7) {
+          triggerRefresh();
+        } else {
+          indicator.style.height = '0px';
+          currentHeight = 0;
+        }
+      });
+
+      async function triggerRefresh() {
+        refreshing = true;
+        indicator.style.height = TRIGGER_HEIGHT + 'px';
+        spinner.classList.add('spinning');
+        spinner.style.transform = '';
+        await fetchPricesFromProxy();
+        indicator.style.height = '0px';
+        currentHeight = 0;
+        refreshing = false;
+      }
+
+      // Espone start/stop per essere usati anche dall'auto-refresh all'apertura
+      window.startPullSpinner = function () {
+        if (refreshing) return;
+        refreshing = true;
+        indicator.classList.remove('snap-back');
+        indicator.style.height = TRIGGER_HEIGHT + 'px';
+        spinner.classList.add('spinning');
+      };
+      window.stopPullSpinner = function () {
+        indicator.classList.add('snap-back');
+        indicator.style.height = '0px';
+        currentHeight = 0;
+        spinner.classList.remove('spinning');
+        refreshing = false;
+      };
+    })();
   </script>
 </body>
 </html>
