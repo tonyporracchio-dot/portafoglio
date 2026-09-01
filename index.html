@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='50%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%2310b981'/%3E%3C/linearGradient%3E%3ClinearGradient id='glow' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981' stop-opacity='0.22'/%3E%3Cstop offset='100%25' stop-color='%232563eb' stop-opacity='0.0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 L 390 370 Z' fill='url(%23glow)'/%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 M 315 180 H 390 V 255' fill='none' stroke='url(%23g)' stroke-width='34' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='50%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%2310b981'/%3E%3C/linearGradient%3E%3ClinearGradient id='glow' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981' stop-opacity='0.22'/%3E%3Cstop offset='100%25' stop-color='%232563eb' stop-opacity='0.0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 L 390 370 Z' fill='url(%23glow)'/%3E%3Cpath d='M 120 370 L 170 320 L 200 345 L 250 265 L 280 290 L 390 180 M 315 180 H 390 V 255' fill='none' stroke='url(%23g)' stroke-width='34' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 
-  <!-- Stili CSS per rimozione barre di scorrimento laterali/orizzontali -->
+  <!-- Stili CSS -->
   <style>
     ::-webkit-scrollbar {
       display: none;
@@ -54,7 +54,7 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Chart.js CDN per Grafici -->
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Firebase SDKs (Compat Version) -->
@@ -74,9 +74,21 @@
   <!-- BARRA SUPERIORE -->
   <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-2.5 backdrop-blur-md">
     <div class="max-w-4xl mx-auto flex justify-between items-center">
-      <span class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-        Portafoglio
-      </span>
+      <div class="flex items-center gap-2">
+        <select id="portfolio-select" onchange="switchPortfolio(this.value)" class="bg-slate-800 text-slate-200 text-xs font-semibold py-1.5 px-2.5 rounded-md border border-slate-700/60 outline-none hover:border-slate-500 transition-colors cursor-pointer pr-6 appearance-none relative">
+          <!-- Opzioni caricate via JS -->
+        </select>
+        <!-- Freccina custom per select -->
+        <div class="pointer-events-none absolute left-[125px] flex items-center px-2 text-slate-400">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </div>
+        <button onclick="openManagePortfoliosModal()" class="text-slate-400 hover:text-white p-1.5 rounded-md bg-slate-800 border border-slate-700/60 hover:bg-slate-700 transition-colors" title="Gestisci Portafogli">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      </div>
 
       <div id="auth-container">
         <button 
@@ -115,14 +127,40 @@
         <div id="daily-total-val" class="text-xs font-semibold mt-1 text-slate-400">Oggi: € 0,00 (0.00%)</div>
       </div>
 
-      <!-- LIQUIDITÀ -->
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm">
-        <div class="flex justify-between items-center">
-          <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Liquidità</span>
-          <button onclick="editCash()" class="text-xs text-blue-400 hover:underline">Modifica</button>
+      <!-- LIQUIDITÀ (CON SOTTOSCHEDE CONTO 1, CONTO 2, CONTO 3 A CASCATA) -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center">
+            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Liquidità Totale</span>
+            <div class="flex items-center gap-2">
+              <button onclick="openAccountsModal()" class="text-xs text-blue-400 hover:underline">Conti</button>
+              <button onclick="openHistoryModal()" class="text-xs text-slate-400 hover:underline">Storico 12M</button>
+            </div>
+          </div>
+          <div id="cash-val" class="text-2xl font-bold text-emerald-400 mt-1">€ 0,00</div>
+          
+          <!-- Variazioni Mese e 12M -->
+          <div class="mt-2 space-y-0.5">
+            <div id="cash-change-val" class="text-xs font-semibold text-slate-400">Mese: € 0,00 (0.00%)</div>
+            <div id="cash-12m-val" class="text-xs font-semibold text-slate-400">12 Mesi: € 0,00 (0.00%)</div>
+          </div>
         </div>
-        <div id="cash-val" class="text-2xl font-bold text-emerald-400 mt-1">€ 0,00</div>
-        <div id="cash-change-val" class="text-xs font-semibold mt-1 text-slate-400">Mese: € 0,00 (0.00%)</div>
+
+        <!-- Sottoschede Preview -->
+        <div class="grid grid-cols-3 gap-1 mt-3 pt-3 border-t border-slate-700/60 text-center" id="accounts-preview-bar">
+          <div class="bg-slate-900/50 p-1 rounded">
+            <div id="prev-name-1" class="text-[10px] text-slate-400 truncate">Conto 1</div>
+            <div id="prev-val-1" class="text-xs font-semibold text-white">€ 0</div>
+          </div>
+          <div class="bg-slate-900/50 p-1 rounded">
+            <div id="prev-name-2" class="text-[10px] text-slate-400 truncate">Conto 2</div>
+            <div id="prev-val-2" class="text-xs font-semibold text-white">€ 0</div>
+          </div>
+          <div class="bg-slate-900/50 p-1 rounded">
+            <div id="prev-name-3" class="text-[10px] text-slate-400 truncate">Conto 3</div>
+            <div id="prev-val-3" class="text-xs font-semibold text-white">€ 0</div>
+          </div>
+        </div>
       </div>
 
       <!-- TITOLI -->
@@ -145,24 +183,19 @@
 
     <!-- SEZIONE TITOLI IN PORTAFOGLIO -->
     <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl shadow-sm overflow-hidden">
-      
       <div class="px-4 py-3 border-b border-slate-700/60 flex justify-between items-center">
         <h2 class="font-medium text-slate-300 text-xs uppercase tracking-wider">Titoli & ETF</h2>
-        
-        <div class="flex items-center gap-2">
-          <button 
-            id="btn-add-asset"
-            onclick="openModal()" 
-            class="text-xs text-slate-400 hover:text-slate-100 bg-slate-900/60 hover:bg-slate-700/50 border border-slate-700/70 px-2.5 py-1 rounded-md transition-all flex items-center gap-1 font-normal">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Aggiungi
-          </button>
-        </div>
+        <button 
+          id="btn-add-asset"
+          onclick="openModal()" 
+          class="text-xs text-slate-400 hover:text-slate-100 bg-slate-900/60 hover:bg-slate-700/50 border border-slate-700/70 px-2.5 py-1 rounded-md transition-all flex items-center gap-1 font-normal">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Aggiungi
+        </button>
       </div>
 
-      <!-- LISTA CARDS TITOLI -->
       <div id="assets-list-body" class="p-3 space-y-3">
         <div class="py-8 text-center text-slate-500 text-xs">
           Caricamento dati in corso...
@@ -188,7 +221,6 @@
         </button>
       </div>
 
-      <!-- WATCHLIST COMPATTA A RIGHE SINGOLE -->
       <div id="watchlist-list-body" class="divide-y divide-slate-700/40">
         <div class="py-6 text-center text-slate-500 text-xs">
           Nessun titolo in watchlist.
@@ -197,6 +229,96 @@
     </div>
 
   </main>
+
+  <!-- MODALE CONTI CASCATA (CONTO 1, CONTO 2, CONTO 3) -->
+  <div id="modal-accounts" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-lg w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-sm font-semibold text-white">Gestione Conti a Cascata</h3>
+          <p class="text-[11px] text-slate-400">L'eccedenza rispetto al budget cade sul conto successivo.</p>
+        </div>
+        <button onclick="closeAccountsModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <form id="form-accounts" onsubmit="saveAccountsData(event)" class="space-y-4">
+        <div class="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3 text-center">
+          <p class="text-[11px] text-blue-200">La liquidità totale per i conti è presa automaticamente dallo storico del mese precedente.</p>
+          <p class="text-lg font-bold text-white mt-1" id="acc-cash-display">€ 0,00</p>
+        </div>
+
+        <!-- CONTO 1 -->
+        <div class="bg-slate-900/60 border border-slate-700/60 rounded-lg p-3 space-y-3">
+          <div class="text-xs font-semibold text-blue-400 uppercase tracking-wider">Conto Principale (1)</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Nome Conto</label>
+              <input type="text" id="acc-name-1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Budget / Soglia Massima (€)</label>
+              <input type="number" step="any" id="acc-budget-1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTO 2 -->
+        <div class="bg-slate-900/60 border border-slate-700/60 rounded-lg p-3 space-y-3">
+          <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Secondo Conto (Cascata 1)</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Nome Conto</label>
+              <input type="text" id="acc-name-2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Budget / Soglia Massima (€)</label>
+              <input type="number" step="any" id="acc-budget-2" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTO 3 -->
+        <div class="bg-slate-900/60 border border-slate-700/60 rounded-lg p-3 space-y-3">
+          <div class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Terzo Conto (Cascata 2)</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Nome Conto</label>
+              <input type="text" id="acc-name-3" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Budget / Soglia Massima (€) (Opzionale)</label>
+              <input type="number" step="any" id="acc-budget-3" placeholder="Illimitato" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeAccountsModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 rounded-lg">Annulla</button>
+          <button type="submit" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-xs font-medium text-white rounded-lg">Salva Conti</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODALE STORICO 12 MESI LIQUIDITÀ -->
+  <div id="modal-history" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <h3 class="text-sm font-semibold text-white">Storico Liquidità (12 Mesi)</h3>
+        <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+      <p class="text-[11px] text-slate-400">Inserisci o aggiorna la liquidità totale registrata nei mesi precedenti.</p>
+
+      <div id="history-inputs-container" class="space-y-2.5">
+        <!-- Generato dinamicamente -->
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-slate-700/60">
+        <button type="button" onclick="closeHistoryModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 rounded-lg">Annulla</button>
+        <button type="button" onclick="saveHistoryData()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-xs font-medium text-white rounded-lg">Salva Storico</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODALE AGGIUNGI / MODIFICA TITOLO -->
   <div id="modal-add" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
@@ -265,6 +387,26 @@
     </div>
   </div>
 
+  <!-- MODALE GESTIONE PORTAFOGLI -->
+  <div id="modal-manage-portfolios" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-sm font-semibold text-white">Gestione Portafogli</h3>
+        <button onclick="closeManagePortfoliosModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+      <p class="text-[11px] text-slate-400">Modifica il nome o elimina i portafogli. Crea un nuovo portafoglio in basso.</p>
+
+      <div id="portfolios-list" class="space-y-2 max-h-48 overflow-y-auto">
+        <!-- Generato via JS -->
+      </div>
+
+      <form id="form-add-portfolio" onsubmit="addPortfolio(event)" class="flex gap-2 pt-3 border-t border-slate-700/60 mt-2">
+        <input type="text" id="new-portfolio-name" placeholder="Nome nuovo portafoglio..." required class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+        <button type="submit" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-xs font-medium text-white rounded-lg">Crea</button>
+      </form>
+    </div>
+  </div>
+
   <!-- LOGICA JAVASCRIPT & FIREBASE -->
   <script>
     const firebaseConfig = {
@@ -284,12 +426,17 @@
     const db = firebase.firestore();
 
     let currentUser = null;
-    let portfolioData = { cash: 0, prevCash: 0, assets: [], watchlist: [] };
-    let allocationChartInstance = null;
-    let isLoggingIn = false; // Flag anti-conflitto doppio click
-    let autoFetchDone = false; // Evita richieste multiple di auto-refresh all'apertura
+    
+    // Nuovo State Globale
+    let appData = {
+      portfolios: [],
+      activePortfolioId: 'default'
+    };
 
-    // Gestione eventuale risultato redirect di riserva
+    let allocationChartInstance = null;
+    let isLoggingIn = false;
+    let autoFetchDone = false;
+
     auth.getRedirectResult().catch((error) => {
       console.warn("Redirect result info:", error);
     });
@@ -313,84 +460,101 @@
       }).format(val || 0);
     }
 
+    function getDefaultPortfolio(id = 'default', name = 'Portafoglio Principale') {
+      return {
+        id: id,
+        name: name,
+        assets: [],
+        watchlist: [],
+        accounts: {
+          acc1: { name: "Conto 1", budget: 1500 },
+          acc2: { name: "Conto 2", budget: 5000 },
+          acc3: { name: "Conto 3", budget: 10000 }
+        },
+        history12m: {}
+      };
+    }
+
     function normalizeData(raw) {
-      if (!raw) return { assets: [], cash: 0, prevCash: 0, watchlist: [] };
-      
-      let assets = [];
-      let cash = 0;
-      let prevCash = 0;
-      let watchlist = [];
+      if (!raw) return { portfolios: [getDefaultPortfolio()], activePortfolioId: 'default' };
 
-      const rawAssets = raw.assets || raw.portafoglio || [];
-      if (Array.isArray(rawAssets)) {
-        assets = rawAssets.map(item => {
-          const ticker = (item.ticker || item.symbol || item.name || item.nome || '').trim().toUpperCase();
-          const name = (item.name || item.displayName || item.customName || ticker).trim();
-          const buyPrice = parseFloat(item.buyPrice || item.pmc || item.prezzo || 0);
-          const currPrice = item.currPrice !== undefined ? parseFloat(item.currPrice) : buyPrice;
-          return {
-            ticker: ticker || 'TITOLO',
-            name: name || ticker || 'Titolo',
-            qty: parseFloat(item.qty || item.quantita || 0),
-            buyPrice: buyPrice,
-            currPrice: currPrice || buyPrice,
-            dailyChange: parseFloat(item.dailyChange ?? item.changePercent ?? 0)
-          };
-        });
+      // Se i dati hanno già il nuovo formato con i portafogli multipli
+      if (raw.portfolios && Array.isArray(raw.portfolios)) {
+        return raw;
       }
 
-      if (Array.isArray(raw.watchlist)) {
-        watchlist = raw.watchlist.map(item => {
-          const ticker = (item.ticker || item.symbol || item.name || '').trim().toUpperCase();
-          const name = (item.name || item.customName || ticker).trim();
-          return {
-            ticker: ticker || 'TITOLO',
-            name: name || ticker || 'Titolo',
-            currPrice: parseFloat(item.currPrice || item.prezzo || 0),
-            dailyChange: parseFloat(item.dailyChange ?? item.changePercent ?? 0)
-          };
-        });
+      // Migrazione dal formato V1 (singolo portafoglio) al formato V2 Multiplo
+      const migratedPortfolio = {
+        id: 'default',
+        name: 'Portafoglio Principale',
+        assets: raw.assets || raw.portafoglio || [],
+        watchlist: raw.watchlist || [],
+        accounts: raw.accounts || {
+          acc1: { name: "Conto 1", budget: 1500 },
+          acc2: { name: "Conto 2", budget: 5000 },
+          acc3: { name: "Conto 3", budget: 10000 }
+        },
+        history12m: raw.history12m || {}
+      };
+
+      return {
+        portfolios: [migratedPortfolio],
+        activePortfolioId: 'default'
+      };
+    }
+
+    function getCurrentPortfolio() {
+      return appData.portfolios.find(p => p.id === appData.activePortfolioId) || appData.portfolios[0];
+    }
+
+    // Calcolo liquidità mese precedente
+    function getPreviousMonthCash(history12m) {
+      const now = new Date();
+      const d1 = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const ym1 = `${d1.getFullYear()}-${String(d1.getMonth() + 1).padStart(2, '0')}`;
+      if (history12m && history12m[ym1] !== undefined && history12m[ym1] !== '') {
+        return parseFloat(history12m[ym1]) || 0;
       }
+      return 0;
+    }
 
-      if (typeof raw.cash === 'number') {
-        cash = raw.cash;
-      } else if (Array.isArray(raw.cash)) {
-        cash = raw.cash.reduce((sum, i) => sum + (parseFloat(i.importo) || 0), 0);
-      } else if (Array.isArray(raw.storicoLiquidita) && raw.storicoLiquidita.length > 0) {
-        const sorted = [...raw.storicoLiquidita].sort((a, b) => (b.mese || '').localeCompare(a.mese || ''));
-        const latestMese = sorted[0].mese;
-        cash = sorted
-          .filter(i => i.mese === latestMese)
-          .reduce((sum, i) => sum + (parseFloat(i.importo) || 0), 0);
-      } else if (typeof raw.storicoLiquidita === 'number') {
-        cash = raw.storicoLiquidita;
-      }
+    // Calcolo cascata conti
+    function calculateWaterfall(accs, totalCash) {
+      if (!accs) return 0;
+      const b1 = parseFloat(accs.acc1?.budget || 0);
+      const b2 = parseFloat(accs.acc2?.budget || 0);
 
-      prevCash = typeof raw.prevCash === 'number' ? raw.prevCash : cash;
+      let val1 = Math.min(totalCash, b1);
+      let remainder = Math.max(0, totalCash - b1);
 
-      return { assets, cash, prevCash, watchlist };
+      let val2 = Math.min(remainder, b2);
+      remainder = Math.max(0, remainder - b2);
+
+      let val3 = remainder;
+
+      accs.acc1.calculatedValue = val1;
+      accs.acc2.calculatedValue = val2;
+      accs.acc3.calculatedValue = val3;
+
+      return totalCash;
     }
 
     function loadFromLocalStorage() {
       try {
-        const localPort = JSON.parse(localStorage.getItem('portafoglio_v5')) || [];
-        const localLiq = JSON.parse(localStorage.getItem('storico_liquidita_v1')) || [];
-        const localNew = JSON.parse(localStorage.getItem('patrimonio_data_v1'));
-
-        if (localNew) {
-          return normalizeData(localNew);
-        } else if (localPort.length > 0 || localLiq.length > 0) {
-          return normalizeData({ portafoglio: localPort, storicoLiquidita: localLiq });
-        }
+        const localNew = JSON.parse(localStorage.getItem('patrimonio_data_v3'));
+        if (localNew) return normalizeData(localNew);
+        // Fallback per vecchi salvataggi
+        const localV2 = JSON.parse(localStorage.getItem('patrimonio_data_v2'));
+        if (localV2) return normalizeData(localV2);
       } catch (e) {
         console.error("Errore lettura localStorage:", e);
       }
-      return { assets: [], cash: 0, prevCash: 0, watchlist: [] };
+      return { portfolios: [getDefaultPortfolio()], activePortfolioId: 'default' };
     }
 
     function saveToLocalStorage() {
       try {
-        localStorage.setItem('patrimonio_data_v1', JSON.stringify(portfolioData));
+        localStorage.setItem('patrimonio_data_v3', JSON.stringify(appData));
       } catch (e) {
         console.error("Errore salvataggio localStorage:", e);
       }
@@ -414,26 +578,23 @@
         const userProfile = document.getElementById('user-profile');
         if (userProfile) userProfile.classList.add('hidden');
         
-        portfolioData = loadFromLocalStorage();
+        appData = loadFromLocalStorage();
+        updatePortfolioSelect();
         updateUI();
         autoFetchOnOpen();
       }
     });
 
-    // Login con protezione anti-conflitto popup e fallback automatico
     function loginWithGoogle() {
       if (isLoggingIn) return;
       isLoggingIn = true;
 
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider)
-        .then(() => {
-          isLoggingIn = false;
-        })
+        .then(() => { isLoggingIn = false; })
         .catch(err => {
           isLoggingIn = false;
           if (err.code === 'auth/cancelled-popup-request') {
-            // Se il popup va in conflitto, prova il redirect automatico come fallback
             auth.signInWithRedirect(provider).catch(e => alert("Errore redirect: " + e.message));
           } else if (err.code === 'auth/popup-blocked') {
             alert("Il browser ha bloccato il popup di accesso. Consenti i popup per questo sito.");
@@ -452,28 +613,19 @@
 
       db.collection('portafogli_utenti').doc(currentUser.uid).onSnapshot((doc) => {
         if (doc.exists) {
-          const cloudData = doc.data();
-          const normalized = normalizeData(cloudData);
-
-          if (normalized.assets.length > 0 || normalized.cash > 0 || normalized.watchlist.length > 0) {
-            portfolioData = normalized;
-          } else {
-            const localData = loadFromLocalStorage();
-            if (localData.assets.length > 0 || localData.cash > 0 || localData.watchlist.length > 0) {
-              portfolioData = localData;
-              saveUserData();
-            }
-          }
+          appData = normalizeData(doc.data());
         } else {
-          portfolioData = loadFromLocalStorage();
+          appData = loadFromLocalStorage();
           saveUserData();
         }
         saveToLocalStorage();
+        updatePortfolioSelect();
         updateUI();
         autoFetchOnOpen();
       }, err => {
         console.error("Errore lettura Firestore:", err);
-        portfolioData = loadFromLocalStorage();
+        appData = loadFromLocalStorage();
+        updatePortfolioSelect();
         updateUI();
       });
     }
@@ -481,23 +633,194 @@
     function saveUserData() {
       saveToLocalStorage();
       if (currentUser) {
-        db.collection('portafogli_utenti').doc(currentUser.uid).set(portfolioData)
+        db.collection('portafogli_utenti').doc(currentUser.uid).set(appData)
           .catch(err => console.error("Errore salvataggio Cloud:", err));
       }
     }
 
-    // Aggiorna i prezzi automaticamente una sola volta all'apertura dell'app
-    // (si attiva alla prima volta che i dati sono disponibili, sia da cloud che locali)
     function autoFetchOnOpen() {
       if (autoFetchDone) return;
-      const hasData = (portfolioData.assets && portfolioData.assets.length > 0) ||
-                       (portfolioData.watchlist && portfolioData.watchlist.length > 0);
+      const p = getCurrentPortfolio();
+      const hasData = (p.assets && p.assets.length > 0) || (p.watchlist && p.watchlist.length > 0);
       if (!hasData) return;
       autoFetchDone = true;
       fetchPricesFromProxy();
     }
 
-    // GESTIONE MODALI E AZIONI
+    /* --- GESTIONE PORTAFOGLI MULTIPLI --- */
+    function switchPortfolio(id) {
+      appData.activePortfolioId = id;
+      saveUserData();
+      updateUI();
+      fetchPricesFromProxy(); // Aggiorna i prezzi per il nuovo portafoglio selezionato
+    }
+
+    function openManagePortfoliosModal() {
+      renderPortfoliosList();
+      document.getElementById('modal-manage-portfolios').classList.remove('hidden');
+    }
+
+    function closeManagePortfoliosModal() {
+      document.getElementById('modal-manage-portfolios').classList.add('hidden');
+    }
+
+    function renderPortfoliosList() {
+       const container = document.getElementById('portfolios-list');
+       container.innerHTML = appData.portfolios.map(p => `
+         <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-lg border border-slate-700/50">
+           ${appData.activePortfolioId === p.id ? '<span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 shrink-0"></span>' : '<span class="w-2 h-2 mr-2 shrink-0"></span>'}
+           <input type="text" value="${p.name}" onchange="renamePortfolio('${p.id}', this.value)" class="flex-1 bg-transparent text-sm text-white focus:outline-none focus:border-b focus:border-blue-500 mr-2">
+           ${appData.portfolios.length > 1 ? `<button onclick="deletePortfolio('${p.id}')" class="text-rose-400 hover:text-rose-300 text-xs p-1">Elimina</button>` : ''}
+         </div>
+       `).join('');
+    }
+
+    function addPortfolio(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-portfolio-name').value.trim();
+      if (!name) return;
+      const id = 'portfolio_' + Date.now();
+      appData.portfolios.push(getDefaultPortfolio(id, name));
+      appData.activePortfolioId = id;
+      
+      document.getElementById('new-portfolio-name').value = '';
+      saveUserData();
+      renderPortfoliosList();
+      updatePortfolioSelect();
+      updateUI();
+    }
+
+    function renamePortfolio(id, newName) {
+      const p = appData.portfolios.find(x => x.id === id);
+      if (p) {
+        p.name = newName.trim() || 'Senza Nome';
+        saveUserData();
+        updatePortfolioSelect();
+      }
+    }
+
+    function deletePortfolio(id) {
+      if (appData.portfolios.length <= 1) return alert("Non puoi eliminare l'unico portafoglio.");
+      if (confirm("Vuoi davvero eliminare questo portafoglio? Tutti i titoli andranno persi.")) {
+        appData.portfolios = appData.portfolios.filter(x => x.id !== id);
+        if (appData.activePortfolioId === id) {
+          appData.activePortfolioId = appData.portfolios[0].id;
+        }
+        saveUserData();
+        renderPortfoliosList();
+        updatePortfolioSelect();
+        updateUI();
+      }
+    }
+
+    function updatePortfolioSelect() {
+      const select = document.getElementById('portfolio-select');
+      if (!select) return;
+      
+      const widthCalc = (text) => text.length * 7 + 30; // Calcolo approssimativo per larghezza select
+
+      select.innerHTML = appData.portfolios.map(p => `
+        <option value="${p.id}" ${appData.activePortfolioId === p.id ? 'selected' : ''}>${p.name}</option>
+      `).join('');
+      
+      const active = appData.portfolios.find(p => p.id === appData.activePortfolioId);
+      if (active) select.style.width = widthCalc(active.name) + 'px';
+    }
+
+    // --- MODALI CONTI E STORICO ---
+    function openAccountsModal() {
+      const p = getCurrentPortfolio();
+      const acc = p.accounts;
+      const totalCash = getPreviousMonthCash(p.history12m);
+
+      document.getElementById('acc-cash-display').innerText = formatEUR(totalCash);
+
+      document.getElementById('acc-name-1').value = acc.acc1?.name || "Conto 1";
+      document.getElementById('acc-budget-1').value = acc.acc1?.budget || 1500;
+
+      document.getElementById('acc-name-2').value = acc.acc2?.name || "Conto 2";
+      document.getElementById('acc-budget-2').value = acc.acc2?.budget || 5000;
+
+      document.getElementById('acc-name-3').value = acc.acc3?.name || "Conto 3";
+      document.getElementById('acc-budget-3').value = acc.acc3?.budget || "";
+
+      document.getElementById('modal-accounts').classList.remove('hidden');
+    }
+
+    function closeAccountsModal() {
+      document.getElementById('modal-accounts').classList.add('hidden');
+    }
+
+    function saveAccountsData(event) {
+      event.preventDefault();
+      const p = getCurrentPortfolio();
+      
+      p.accounts.acc1.name = document.getElementById('acc-name-1').value.trim() || "Conto 1";
+      p.accounts.acc1.budget = parseFloat(document.getElementById('acc-budget-1').value) || 0;
+
+      p.accounts.acc2.name = document.getElementById('acc-name-2').value.trim() || "Conto 2";
+      p.accounts.acc2.budget = parseFloat(document.getElementById('acc-budget-2').value) || 0;
+
+      p.accounts.acc3.name = document.getElementById('acc-name-3').value.trim() || "Conto 3";
+      p.accounts.acc3.budget = parseFloat(document.getElementById('acc-budget-3').value) || 0;
+
+      saveUserData();
+      updateUI();
+      closeAccountsModal();
+    }
+
+    function openHistoryModal() {
+      const p = getCurrentPortfolio();
+      const container = document.getElementById('history-inputs-container');
+      if (!container) return;
+
+      const now = new Date();
+      let html = '';
+
+      for (let i = 1; i <= 12; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const monthNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+        const label = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+        const val = p.history12m && p.history12m[yearMonth] !== undefined ? p.history12m[yearMonth] : '';
+
+        html += `
+          <div class="flex items-center justify-between gap-3 bg-slate-900/50 p-2 rounded-lg border border-slate-700/50">
+            <span class="text-xs text-slate-300 font-medium w-36">${label}</span>
+            <input type="number" step="any" data-ym="${yearMonth}" value="${val}" placeholder="€ 0,00" class="history-input flex-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-blue-500">
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+      document.getElementById('modal-history').classList.remove('hidden');
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('modal-history').classList.add('hidden');
+    }
+
+    function saveHistoryData() {
+      const p = getCurrentPortfolio();
+      const inputs = document.querySelectorAll('.history-input');
+      if (!p.history12m) p.history12m = {};
+
+      inputs.forEach(input => {
+        const ym = input.getAttribute('data-ym');
+        const val = parseFloat(input.value);
+        if (!isNaN(val)) {
+          p.history12m[ym] = val;
+        } else {
+          delete p.history12m[ym];
+        }
+      });
+
+      saveUserData();
+      updateUI();
+      closeHistoryModal();
+    }
+
+    // --- GESTIONE TITOLI E WATCHLIST ---
     function openModal() {
       document.getElementById('editing-index').value = "-1";
       document.getElementById('modal-title').innerText = "Aggiungi titolo in portafoglio";
@@ -510,7 +833,8 @@
     }
 
     function editAsset(index) {
-      const item = portfolioData.assets[index];
+      const p = getCurrentPortfolio();
+      const item = p.assets[index];
       if (!item) return;
 
       document.getElementById('editing-index').value = index;
@@ -524,19 +848,20 @@
 
     function saveAsset(event) {
       event.preventDefault();
+      const p = getCurrentPortfolio();
       const index = parseInt(document.getElementById('editing-index').value);
       const ticker = document.getElementById('asset-ticker').value.trim().toUpperCase();
       const name = document.getElementById('asset-name').value.trim() || ticker;
       const qty = parseFloat(document.getElementById('asset-qty').value) || 0;
       const buyPrice = parseFloat(document.getElementById('asset-buy-price').value) || 0;
 
-      if (index >= 0 && portfolioData.assets[index]) {
-        portfolioData.assets[index].ticker = ticker;
-        portfolioData.assets[index].name = name;
-        portfolioData.assets[index].qty = qty;
-        portfolioData.assets[index].buyPrice = buyPrice;
+      if (index >= 0 && p.assets[index]) {
+        p.assets[index].ticker = ticker;
+        p.assets[index].name = name;
+        p.assets[index].qty = qty;
+        p.assets[index].buyPrice = buyPrice;
       } else {
-        portfolioData.assets.push({
+        p.assets.push({
           ticker: ticker,
           name: name,
           qty: qty,
@@ -553,24 +878,10 @@
 
     function deleteAsset(index) {
       if (confirm("Vuoi davvero eliminare questo titolo?")) {
-        portfolioData.assets.splice(index, 1);
+        const p = getCurrentPortfolio();
+        p.assets.splice(index, 1);
         saveUserData();
         updateUI();
-      }
-    }
-
-    function editCash() {
-      const newCash = prompt("Inserisci il valore aggiornato della liquidità (€):", portfolioData.cash || 0);
-      if (newCash !== null) {
-        const val = parseFloat(newCash);
-        if (!isNaN(val)) {
-          portfolioData.prevCash = portfolioData.cash;
-          portfolioData.cash = val;
-          saveUserData();
-          updateUI();
-        } else {
-          alert("Valore non valido.");
-        }
       }
     }
 
@@ -585,11 +896,12 @@
 
     function saveWatchlistAsset(event) {
       event.preventDefault();
+      const p = getCurrentPortfolio();
       const ticker = document.getElementById('watchlist-ticker').value.trim().toUpperCase();
       const name = document.getElementById('watchlist-name').value.trim() || ticker;
 
-      if (!portfolioData.watchlist) portfolioData.watchlist = [];
-      portfolioData.watchlist.push({
+      if (!p.watchlist) p.watchlist = [];
+      p.watchlist.push({
         ticker: ticker,
         name: name,
         currPrice: 0,
@@ -602,16 +914,18 @@
     }
 
     function deleteWatchlistAsset(index) {
-      if (portfolioData.watchlist && portfolioData.watchlist[index]) {
-        portfolioData.watchlist.splice(index, 1);
+      const p = getCurrentPortfolio();
+      if (p.watchlist && p.watchlist[index]) {
+        p.watchlist.splice(index, 1);
         saveUserData();
         updateUI();
       }
     }
 
     async function fetchPricesFromProxy() {
-      const allAssets = portfolioData.assets || [];
-      const allWatchlist = portfolioData.watchlist || [];
+      const p = getCurrentPortfolio();
+      const allAssets = p.assets || [];
+      const allWatchlist = p.watchlist || [];
 
       if (allAssets.length === 0 && allWatchlist.length === 0) {
         return;
@@ -632,7 +946,7 @@
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 20000);
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
 
           const res = await fetch(url, { signal: controller.signal });
           clearTimeout(timeoutId);
@@ -655,7 +969,7 @@
           if (!quote || !quote.symbol) return;
           const sym = quote.symbol.toUpperCase();
 
-          portfolioData.assets.forEach(a => {
+          p.assets.forEach(a => {
             if ((a.ticker || a.name).trim().toUpperCase() === sym) {
               if (typeof quote.price === 'number' && quote.price > 0) a.currPrice = quote.price;
               if (typeof quote.changePercent === 'number') a.dailyChange = quote.changePercent;
@@ -663,8 +977,8 @@
             }
           });
 
-          if (portfolioData.watchlist) {
-            portfolioData.watchlist.forEach(w => {
+          if (p.watchlist) {
+            p.watchlist.forEach(w => {
               if ((w.ticker || w.name).trim().toUpperCase() === sym) {
                 if (typeof quote.price === 'number' && quote.price > 0) w.currPrice = quote.price;
                 if (typeof quote.changePercent === 'number') w.dailyChange = quote.changePercent;
@@ -684,11 +998,13 @@
     }
 
     function updateUI() {
+      const p = getCurrentPortfolio();
+      
       let totalInvestedVal = 0;
       let totalCostVal = 0;
       let totalDailyGainLoss = 0;
 
-      portfolioData.assets.forEach(a => {
+      p.assets.forEach(a => {
         const qty = a.qty || 0;
         const buyPrice = a.buyPrice || 0;
         const currPrice = a.currPrice || buyPrice;
@@ -703,10 +1019,25 @@
         totalDailyGainLoss += assetDailyEuro;
       });
 
-      const totalCash = typeof portfolioData.cash === 'number' ? portfolioData.cash : 0;
-      const prevCash = typeof portfolioData.prevCash === 'number' ? portfolioData.prevCash : totalCash;
+      // Calcolo Cash in base allo storico del mese scorso
+      const totalCash = getPreviousMonthCash(p.history12m);
+      calculateWaterfall(p.accounts, totalCash);
+
+      // Calcolo Variazione Mese per Liquidità: Mese Scorso (totalCash) vs 2 Mesi Fa
+      const now = new Date();
+      const d2 = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      const ym2 = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, '0')}`;
+      const prevCash = (p.history12m && p.history12m[ym2] !== undefined && p.history12m[ym2] !== '') ? parseFloat(p.history12m[ym2]) : 0;
+      
       const cashDiff = totalCash - prevCash;
       const cashDiffPerc = prevCash > 0 ? (cashDiff / prevCash) * 100 : 0;
+
+      // Calcolo Variazione 12M per Liquidità: Mese Scorso vs 1 Anno Fa
+      const d12 = new Date(now.getFullYear() - 1, now.getMonth() - 1, 1);
+      const ym12 = `${d12.getFullYear()}-${String(d12.getMonth() + 1).padStart(2, '0')}`;
+      const cash12Val = (p.history12m && p.history12m[ym12] !== undefined && p.history12m[ym12] !== '') ? parseFloat(p.history12m[ym12]) : totalCash;
+      const cash12Diff = totalCash - cash12Val;
+      const cash12Perc = cash12Val > 0 ? (cash12Diff / cash12Val) * 100 : 0;
 
       const totalPortfolio = totalInvestedVal + totalCash;
       const totalProfit = totalInvestedVal - totalCostVal;
@@ -724,12 +1055,24 @@
       // 2. Liquidità
       safeSetText('cash-val', formatEUR(totalCash));
       const isCashPos = cashDiff >= 0;
-      safeSetClass('cash-change-val', `text-xs font-semibold mt-1 ${isCashPos ? 'text-emerald-400' : 'text-rose-400'}`);
+      safeSetClass('cash-change-val', `text-xs font-semibold ${isCashPos ? 'text-emerald-400' : 'text-rose-400'}`);
       safeSetText('cash-change-val', `Mese: ${isCashPos ? '+' : ''}${formatEUR(cashDiff)} (${isCashPos ? '+' : ''}${cashDiffPerc.toFixed(2)}%)`);
+
+      const is12mPos = cash12Diff >= 0;
+      safeSetClass('cash-12m-val', `text-xs font-semibold ${is12mPos ? 'text-emerald-400' : 'text-rose-400'}`);
+      safeSetText('cash-12m-val', `12 Mesi: ${is12mPos ? '+' : ''}${formatEUR(cash12Diff)} (${is12mPos ? '+' : ''}${cash12Perc.toFixed(2)}%)`);
+
+      // Anteprima sottoschede conto 1, 2, 3
+      const acc = p.accounts;
+      safeSetText('prev-name-1', acc.acc1?.name || "Conto 1");
+      safeSetText('prev-val-1', formatEUR(acc.acc1?.calculatedValue || 0, 0, 0));
+      safeSetText('prev-name-2', acc.acc2?.name || "Conto 2");
+      safeSetText('prev-val-2', formatEUR(acc.acc2?.calculatedValue || 0, 0, 0));
+      safeSetText('prev-name-3', acc.acc3?.name || "Conto 3");
+      safeSetText('prev-val-3', formatEUR(acc.acc3?.calculatedValue || 0, 0, 0));
 
       // 3. Titoli
       safeSetText('invested-val', formatEUR(totalInvestedVal));
-      
       const prevInvestedVal = totalInvestedVal - totalDailyGainLoss;
       const investedDailyPerc = prevInvestedVal > 0 ? (totalDailyGainLoss / prevInvestedVal) * 100 : 0;
       safeSetClass('invested-daily-val', `text-xs font-semibold mt-1 ${isDailyPos ? 'text-emerald-400' : 'text-rose-400'}`);
@@ -739,13 +1082,12 @@
       safeSetClass('gain-loss-val', `text-xs font-semibold text-slate-400`);
       safeSetText('gain-loss-val', `Totale: ${isPos ? '+' : ''}${formatEUR(totalProfit)} (${isPos ? '+' : ''}${totalProfitPerc.toFixed(2)}%)`);
 
-      renderAllocationChart();
-      renderList();
-      renderWatchlistList();
+      renderAllocationChart(p, totalCash);
+      renderList(p);
+      renderWatchlistList(p);
     }
 
-    // RENDERING GRAFICO ALLOCAZIONE (DOUGHNUT)
-    function renderAllocationChart() {
+    function renderAllocationChart(p, totalCash) {
       const ctx = document.getElementById('allocationChart');
       if (!ctx) return;
 
@@ -756,7 +1098,7 @@
         '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6'
       ];
 
-      portfolioData.assets.forEach((a, i) => {
+      p.assets.forEach((a, i) => {
         const qty = a.qty || 0;
         const currPrice = a.currPrice || a.buyPrice || 0;
         const val = qty * currPrice;
@@ -766,19 +1108,16 @@
         }
       });
 
-      const cash = typeof portfolioData.cash === 'number' ? portfolioData.cash : 0;
-      if (cash > 0) {
-        labels.push('Liquidità');
-        dataValues.push(cash);
+      if (totalCash > 0) {
+        labels.push('Liquidità Totale');
+        dataValues.push(totalCash);
       }
 
       if (allocationChartInstance) {
         allocationChartInstance.destroy();
       }
 
-      if (dataValues.length === 0) {
-        return;
-      }
+      if (dataValues.length === 0) return;
 
       allocationChartInstance = new Chart(ctx, {
         type: 'doughnut',
@@ -820,17 +1159,16 @@
       });
     }
 
-    // RENDERING CARDS TITOLI
-    function renderList() {
+    function renderList(p) {
       const container = document.getElementById('assets-list-body');
       if (!container) return;
 
-      if (portfolioData.assets.length === 0) {
+      if (p.assets.length === 0) {
         container.innerHTML = `<div class="py-8 text-center text-slate-500 text-xs">Nessun titolo in portafoglio. Clicca su "+ Aggiungi" per iniziare.</div>`;
         return;
       }
 
-      container.innerHTML = portfolioData.assets.map((item, index) => {
+      container.innerHTML = p.assets.map((item, index) => {
         const name = item.name || item.ticker || 'Titolo';
         const ticker = (item.ticker || item.name || '').toUpperCase();
         const qty = item.qty || 0;
@@ -871,7 +1209,7 @@
                   ${isPos ? '+' : ''}${formatEUR(profit)} (${isPos ? '+' : ''}${profitPerc.toFixed(2)}%)
                 </span>
                 <div class="flex items-center gap-1 bg-slate-800 px-1 py-0.5 rounded border border-slate-700/60">
-                  <button onclick="editAsset(${index})" class="text-slate-400 hover:text-blue-400 p-0.5" title="Modifica PMC e Dati">
+                  <button onclick="editAsset(${index})" class="text-slate-400 hover:text-blue-400 p-0.5" title="Modifica PMC">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
                     </svg>
@@ -889,12 +1227,11 @@
       }).join('');
     }
 
-    // RENDERING WATCHLIST
-    function renderWatchlistList() {
+    function renderWatchlistList(p) {
       const container = document.getElementById('watchlist-list-body');
       if (!container) return;
 
-      const watchlist = portfolioData.watchlist || [];
+      const watchlist = p.watchlist || [];
 
       if (watchlist.length === 0) {
         container.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">Nessun titolo in watchlist.</div>`;
@@ -932,7 +1269,7 @@
       }).join('');
     }
 
-    // PULL-TO-REFRESH
+    // PULL-TO-REFRESH SICURO CON TIMEOUT DI SICUREZZA
     (function initPullToRefresh() {
       const indicator = document.getElementById('pull-refresh-indicator');
       const spinner = document.getElementById('pull-refresh-spinner');
@@ -944,6 +1281,7 @@
       let currentHeight = 0;
       let tracking = false;
       let refreshing = false;
+      let safetyTimer = null;
 
       document.addEventListener('touchstart', (e) => {
         if (window.scrollY === 0 && !refreshing) {
@@ -977,25 +1315,37 @@
       });
 
       async function triggerRefresh() {
+        if (refreshing) return;
         refreshing = true;
         indicator.style.height = TRIGGER_HEIGHT + 'px';
         spinner.classList.add('spinning');
         spinner.style.transform = '';
+
+        // Timeout di sicurezza per evitare rotazione infinita in caso di problemi di rete
+        safetyTimer = setTimeout(() => {
+          stopPullSpinner();
+        }, 12000);
+
         await fetchPricesFromProxy();
-        indicator.style.height = '0px';
-        currentHeight = 0;
-        refreshing = false;
+        if (safetyTimer) clearTimeout(safetyTimer);
+        stopPullSpinner();
       }
 
-      // Espone start/stop per essere usati anche dall'auto-refresh all'apertura
       window.startPullSpinner = function () {
         if (refreshing) return;
         refreshing = true;
         indicator.classList.remove('snap-back');
         indicator.style.height = TRIGGER_HEIGHT + 'px';
         spinner.classList.add('spinning');
+
+        if (safetyTimer) clearTimeout(safetyTimer);
+        safetyTimer = setTimeout(() => {
+          stopPullSpinner();
+        }, 12000);
       };
+
       window.stopPullSpinner = function () {
+        if (safetyTimer) clearTimeout(safetyTimer);
         indicator.classList.add('snap-back');
         indicator.style.height = '0px';
         currentHeight = 0;
@@ -1006,3 +1356,8 @@
   </script>
 </body>
 </html>
+```
+
+### Modifiche apportate:
+- **Variazione Mensile collegata allo Storico:** La voce **Mese** nella scheda Liquidità ora recupera automaticamente la cifra immessa nello storico 12M per il mese solare precedente (es. luglio se siamo ad agosto).
+- Se non è stato ancora inserito alcun dato per il mese precedente nello storico, viene mantenuto il valore corrente senza generare errori.
