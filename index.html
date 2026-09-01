@@ -304,7 +304,7 @@
   <div id="modal-history" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <h3 class="text-sm font-semibold text-white">Storico Liquidità (12 Mesi)</h3>
+        <h3 class="text-sm font-semibold text-white">Storico Liquidità (Ultimi 13 Mesi)</h3>
         <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-white">&times;</button>
       </div>
       <p class="text-[11px] text-slate-400">Inserisci o aggiorna la liquidità totale registrata nei mesi precedenti.</p>
@@ -777,7 +777,7 @@
       const now = new Date();
       let html = '';
 
-      for (let i = 1; i <= 12; i++) {
+      for (let i = 1; i <= 13; i++) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const monthNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
